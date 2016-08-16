@@ -1,0 +1,129 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Lassi | Login</title>
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css">
+
+
+
+    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
+    <script src="js/ie-emulation-modes-warning.js"></script>
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <style>
+        body {
+            padding-bottom: 40px;
+            background-color: #eee;
+        }
+
+        .form-signin {
+            max-width: 330px;
+            padding: 15px;
+            margin: 0 auto;
+        }
+        .form-signin .form-signin-heading,
+        .form-signin .checkbox {
+            margin-bottom: 10px;
+        }
+        .form-signin .checkbox {
+            font-weight: normal;
+        }
+        .form-signin .form-control {
+            position: relative;
+            height: auto;
+            -webkit-box-sizing: border-box;
+            -moz-box-sizing: border-box;
+            box-sizing: border-box;
+            padding: 10px;
+            font-size: 16px;
+        }
+        .form-signin .form-control:focus {
+            z-index: 2;
+        }
+        .form-signin input[type="email"] {
+            margin-bottom: -1px;
+            border-bottom-right-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+        .form-signin input[type="password"] {
+            margin-bottom: 10px;
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+
+    </style>
+</head>
+
+<body>
+<div id="wrapper">
+    <!-- Navigation -->
+    <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0">
+
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <!--<h1 style="margin-left: 10px">Incentive Server</h1>-->
+            <a href="http://lassi.ise.bgu.ac.il/" target="_blank"> <img  width="350px" src="img/logo.png" style="margin-left: 10px;margin-right: 20px"></a>
+
+        </div>
+        <div class="navbar-header navbar-right" style="margin: 0">
+            <img width="250px" src="img/bgu.png" style="margin-left: 10px;margin-right: 20px">
+            <img width="200px" src="img/msr.png" style="margin-left: 10px;margin-right: 20px">
+            <img  width="250px" src="img/zooniverse.png" style="margin-left: 10px;margin-right: 20px">
+        </div>
+        <!-- /.navbar-header -->
+
+
+        <!-- /.navbar-top-links -->
+
+    </nav>
+<div class="container" style="padding-top: 40px">
+
+
+
+    <form class="form-signin">
+        <h2 class="form-signin-heading">Please sign in</h2>
+        <label for="inputEmail" class="sr-only">Email address</label>
+        <input type="email" id="inputEmail" class="form-control" placeholder="Email address" required autofocus>
+        <label for="inputPassword" class="sr-only">Password</label>
+        <input type="password" id="inputPassword" class="form-control" placeholder="Password" required>
+        <div class="checkbox">
+            <label>
+                <input type="checkbox" value="remember-me"> Remember me
+            </label>
+        </div>
+        <button onclick="checklogin()" class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
+    </form>
+
+</div> <!-- /container -->
+    </div>
+<!-- jQuery -->
+<script src="bower_components/jquery/dist/jquery.min.js"></script>
+<!-- Latest compiled and minified JavaScript -->
+<script src="js/checklogin.js"/>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+
+<!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+<script src="js/ie10-viewport-bug-workaround.js"></script>
+</body>
+</html>

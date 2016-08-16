@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block jumbotron %}
+    <!-- Main jumbotron for a primary marketing message or call to action -->
+    <div class="jumbotron">
+      <div class="container">
+          {% if user.is_authenticated %}
+        <h1>Welcome Back {{ request.user.first_name }}!</h1>
+          {% else %}
+           <h1>Welcome!</h1>
+          {% endif %}
+          <p>This is the Incentive Server. login and find out all our features </p>
+          <p><a class="btn btn-primary btn-lg" href="{% url 'wiki' %}" role="button">Learn more &raquo;</a></p>
+      </div>
+    </div>
+
+{% endblock %}
+
+
+{% block content %}
+<!--<div class="col-md-4"></div>
+        <div class="col-md-4">
+         <h1>Join Now</h1>
+<form method='POST' action=''> {% csrf_token %}
+    {{form.as_p}}
+    <input type="submit" class="btn btn-success btn-block"/>
+</form>
+
+        </div>-->
+
+{% endblock %}

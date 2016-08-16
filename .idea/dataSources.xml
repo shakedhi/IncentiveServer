@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DataSourceManagerImpl" format="xml" hash="3427287774">
+    <data-source source="LOCAL" name="Django default" uuid="16975453-7a18-4bc7-b048-63c8cb8c6779">
+      <driver-ref>sqlite.xerial</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
+      <jdbc-url>jdbc:mysql://127.0.0.1:3306/lassi</jdbc-url>
+      <explain-plan-config>
+        <provider>com.intellij.database.plan.sqlite.SqliteExplainPlanProvider</provider>
+      </explain-plan-config>
+    </data-source>
+  </component>
+</project>

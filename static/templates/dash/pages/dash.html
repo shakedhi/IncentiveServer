@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Lassi - Dash</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="/static/bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- MetisMenu CSS -->
+    <link href="/static/bower_components/metisMenu/dist/metisMenu.min.css" rel="stylesheet">
+
+    <!-- Timeline CSS -->
+    <link href="/static/dist/css/timeline.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="/static/dist/css/sb-admin-2.css" rel="stylesheet">
+
+    <!-- Morris Charts CSS -->
+    <link href="/static/bower_components/morrisjs/morris.css" rel="stylesheet">
+
+    <!-- Custom Fonts -->
+    <link href="/static/bower_components/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+
+    <!-- Bootstrap Core CSS -->
+    <link href="/static/bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- MetisMen/static/templates/Dashu CSS -->
+    <link href="/static/bower_components/metisMenu/dist/metisMenu.min.css" rel="stylesheet">
+
+    <!-- DataTables CSS -->
+    <link href="/static/bower_components/datatables-plugins/integration/bootstrap/3/dataTables.bootstrap.css" rel="stylesheet">
+
+    <!-- DataTables Responsive CSS -->
+    <link href="/static/bower_components/datatables-responsive/css/dataTables.responsive.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="/static/dist/css/sb-admin-2.css" rel="stylesheet">
+
+    <!-- Custom Fonts -->
+    <link href="/static/bower_components/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+</head>
+
+<body>
+
+    <div id="wrapper">
+
+        <!-- Navigation -->
+        <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0">
+
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <!--<h1 style="margin-left: 10px">Incentive Server</h1>-->
+                <a href="http://lassi.ise.bgu.ac.il/" target="_blank" style="font-style: normal;color: #808080"><h1>Incentive Server</h1></a>
+{#                <a href="http://lassi.ise.bgu.ac.il/" target="_blank"> <img  width="350px" src="/static/img/logo.png" style="margin-left: 10px;margin-right: 20px"></a>#}
+
+            </div>
+            <div class="navbar-header navbar-right" style="margin: 0">
+                <img width="250px" src="/static/img/bgu.png" style="margin-left: 10px;margin-right: 20px">
+              {#  <img width="200px" src="/static/img/msr.png" style="margin-left: 10px;margin-right: 20px"> #}
+                <img  width="250px" src="/static/img/zooniverse.png" style="margin-left: 10px;margin-right: 20px">
+            </div>
+            <!-- /.navbar-header -->
+
+
+            <!-- /.navbar-top-links -->
+
+        </nav>
+
+        <div id="page-wrapper" style="margin: 0 0 0 0;">
+            <!--<div class="row">-->
+                <!--<div class="col-lg-12">-->
+                    <!--<h1 class="page-header">Dashboard</h1>-->
+                <!--</div>-->
+                <!--&lt;!&ndash; /.col-lg-12 &ndash;&gt;-->
+            <!--</div>-->
+            <!-- /.row -->
+            <br>
+            <div class="row" >
+                <div>
+                  <div class="panel panel-default">
+                        <div class="panel-heading">
+                            Prediction & Intervention Messages
+                        </div>
+                          <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            <div class="dataTable_wrapper">
+                                <table class="table table-striped table-bordered table-hover" id="dataTables1" data-show-columns="true">
+                                    <thead>
+                                        <tr>
+                                            <th >User ID</th>
+                                            <th data-field="cat1" data-sortable="true" data-visible="false">Created At</th>
+                                            <th >Country</th>
+                                            <th >Intervention</th>
+                                            <th >Preconfigured ID</th>
+                                            <th >Cohort ID</th>
+                                            <th >Algo Info</th>
+                                            <th >DB ID</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!--<tr class="odd gradeX">-->
+                                            <!--<td>123123</td>-->
+        <!---->
+                                            <!--<td class="center">Staying</td>-->
+                                        <!--</tr>-->
+                                        <!--<tr class="even gradeC">-->
+                                            <!--<td>45252342</td>-->
+                                    <!---->
+                                            <!--<td class="center">Leaving in 5 minutes -> send intervention</td>-->
+                                        <!--</tr>-->
+
+                                    </tbody>
+                                </table>
+                            </div>
+                            <!-- /.table-responsive -->
+
+                        </div>
+                        <!-- /.panel-body -->
+                    </div>
+                    <!-- /.panel -->
+                  </div>
+            <!-- /.row -->
+                </div>
+            <div class="row">
+                <div class="col-lg-8">
+                 <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bar-chart-o fa-fw"></i>Intervention Messages Recommended
+
+                        </div>
+
+
+                                <!-- /.col-lg-4 (nested) -->
+                                <div class="col-lg-12">
+                                    <div id="morris-bar-chart"></div>
+                                </div>
+                                <!-- /.col-lg-8 (nested) -->
+                 </div>
+                </div>
+
+                <!-- /.col-lg-8 -->
+                <div class="col-lg-4">
+                 <div class="panel panel-default">
+                        <div class="panel-heading" >
+                            <i class="fa fa-bar-chart-o fa-fw" ></i> Predicted Leaving vs Staying
+                        </div>
+                        <div class="panel-body" >
+                            <div id="morris-donut-chart"></div>
+                        </div>
+                        <!-- /.panel-body -->
+                    </div>
+
+
+
+                    </div>
+                    <!-- /.panel .chat-panel -->
+                </div>
+                <!-- /.col-lg-4 -->
+            </div>
+            <!-- /.row -->
+
+        </div>
+        <!-- /#page-wrapper -->
+
+    </div>
+    <footer>
+        <div class="container">
+        <div class="row text-center">
+            <p style="font-size: 16px">Copyright&copy;2015 HDMAI</p>
+        </div>
+        </div>
+    </footer>
+    <!-- /#wrapper -->
+
+    <!-- jQuery -->
+    <script src="/static/bower_components/jquery/dist/jquery.min.js"></script>
+
+    <!-- Bootstrap Core JavaScript -->
+    <script src="/static/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+
+    <!-- Metis Menu Plugin JavaScript -->
+    <script src="/static/bower_components/metisMenu/dist/metisMenu.min.js"></script>
+
+    <!-- Morris Charts JavaScript -->
+    <script src="/static/bower_components/raphael/raphael-min.js"></script>
+    <script src="/static/bower_components/morrisjs/morris.js"></script>
+    <script src="/static/js/morris-data.js"></script>
+
+    <!-- Custom Theme JavaScript -->
+    <script src="/static/js/sb-admin-2.js"></script>
+
+      <!-- jQuery -->
+    <script src="/static/bower_components/jquery/dist/jquery.min.js"></script>
+
+    <!-- Bootstrap Core JavaScript -->
+    <script src="/static/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+
+    <!-- Metis Menu Plugin JavaScript -->
+    <script src="/static/bower_components/metisMenu/dist/metisMenu.min.js"></script>
+
+    <!-- DataTables JavaScript -->
+    <script src="/static/bower_components/datatables/media/js/jquery.dataTables.js"></script>
+    <script src="/static/bower_components/datatables-plugins/integration/bootstrap/3/dataTables.bootstrap.min.js"></script>
+
+    <!-- Custom Theme JavaScript -->
+    <script src="/static/dist/js/sb-admin-2.js"></script>
+
+    <!-- Page-Level Demo Scripts - Tables - Use for reference -->
+    <script>
+    $(document).ready(function() {
+        $('#dataTables1').DataTable({
+            responsive: true
+        });
+    });
+
+    var bar=Morris.Bar({
+            element: 'morris-bar-chart',
+            data: [{
+                y: 'Email',
+                a: 0
+            }, {
+                y: 'Pop-up',
+                a: 0
+            },
+                {
+                    y: 'Message Box',
+                    a: 0
+                }],
+            xkey: 'y',
+            ykeys: ['a'],
+            labels: ['Numbers'],
+            hideHover: 'auto',
+            resize: true,
+            barColors: function (row, series, type) {
+                if(row.label == "Pop-up") return "#CB7D00";
+                else if(row.label == "Email") return "#FF9E00";
+                else if(row.label == "Message Box") return "#905900";
+            }
+    });
+
+    var don=Morris.Donut({
+            element: 'morris-donut-chart',
+            data: [{
+                label: "Leaving",
+                value: 36
+            }, {
+                label: "Staying",
+                value: 74
+            }],
+            resize: true,
+            colors:["#8A0808","#088A29"],
+            formatter:function (y, data) { return  y+"%" }
+    });
+
+    function Donut(){
+              $.ajax({
+                  url: '/disratio/',
+                  async: true,
+                  method: 'GET',
+                  success: function (msg) {
+                      var arr=  JSON.parse(msg);
+                      var leaving = (JSON.parse(arr[0]).l*100).toFixed(3);
+                      var staying = (JSON.parse(arr[0]).s*100).toFixed(3);
+                       don.setData([
+
+                {label: "Leaving", value: leaving},
+                {label: "Staying", value: staying}
+            ]);
+                  },error: function(xhr, status, error) {
+                        alert(xhr.responseText);
+                    }
+              });
+    }
+
+
+
+
+    </script>
+
+    <script type="text/javascript">
+
+
+        var table2=$('#dataTables1').DataTable();
+        var previous_text = 0;
+        var rcrd_id = 0;
+        var streamUrl = "streamResponse/";
+        /*Eran Read from stream asynchronously*/
+        function get_by_date(){
+            $.ajax({
+                url: '/ask_by_date/',
+                async:true,
+                method: 'GET',
+                success: function(msg) {
+                    var arr = msg.split('\n');
+                    var tmp = Object.prototype.toString.call( arr );
+                    if( tmp === '[object Array]' ) {
+                    arr.forEach(function(row) {
+                        if(row !="") {
+                            var entry = JSON.parse(row);
+                            var entry = JSON.parse(row);
+                            if (entry['id'] > rcrd_id)
+                                rcrd_id = entry['id'];
+
+                            table2.row.add([
+                                        entry['user_id'],
+                                        entry['created_at'],
+                                        entry['country_name'],
+                                        entry['intervention_id'],
+                                        entry['preconfigured_id'],
+                                        entry['cohort_id'],
+                                        entry['algo_info'],
+                                               entry['id']+ ""]
+                            ).order( [[ 1, 'desc' ]] ).draw(false);
+                            Donut();
+                        }
+                    });
+                    }
+                    else{
+                        var entry=  JSON.parse(msg);
+                        if(entry['id']>rcrd_id)
+                            rcrd_id=entry['id'];
+                        table2.row.add([
+                            entry['user_id'],
+                            entry['created_at'],
+                            entry['country_name'],
+                            entry['intervention_id'],
+                            entry['preconfigured_id'],
+                            entry['cohort_id'],
+                            entry['algo_info'],entry['id']+""]
+                                  ).order( [[ 1, 'desc' ]] ).draw(false);
+                        Donut();
+                    }
+                    setTimeout(get_gt_id, 500);
+                },
+                error: function() {
+                    setTimeout(get_by_date, 500);
+                }
+            });
+
+        }
+        function get_gt_id(){
+            $.ajax({
+                url: '/ask_gt_id/?record_id='+rcrd_id,
+                async:true,
+                method: 'GET',
+                success: function(msg) {
+                    var arr = msg.split('\n');
+                    var tmp = Object.prototype.toString.call( arr );
+                    if( tmp === '[object Array]' ) {
+                        arr.forEach(function (row) {
+                            if(row !="") {
+                                var entry = JSON.parse(row);
+                                if (entry['id'] > rcrd_id)
+                                    rcrd_id = entry['id'];
+                                table2.row.add([
+                                            entry['user_id'],
+                                            entry['created_at'],
+                                            entry['country_name'],
+                                            entry['intervention_id'],
+                                            entry['preconfigured_id'],
+                                            entry['cohort_id'],
+                                            entry['algo_info'],entry['id']+ ""]
+                                ).order( [[ 1, 'desc' ]] ).draw(false);
+                                Donut();
+                            }
+                        });
+                    }else{
+                        var entry=  JSON.parse(msg);
+                        if(entry['id']>rcrd_id)
+                            rcrd_id=entry['id'];
+                        table2.row.add([
+                            entry['user_id'],
+                            entry['created_at'],
+                            entry['country_name'],
+                            entry['intervention_id'],
+                            entry['preconfigured_id'],
+                            entry['cohort_id'],
+                            entry['algo_info'],entry['id']+ ""]
+                                  ).order( [[ 1, 'desc' ]] ).draw(false);
+                        Donut();
+                    }
+                    setTimeout(get_gt_id, 500);
+                },
+                error: function() {
+                    setTimeout(get_gt_id, 500);
+                }
+            });
+        }
+        get_by_date();
+        setTimeout(Donut, 500);
+    </script>
+
+
+</body>
+
+</html>

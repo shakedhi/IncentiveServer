@@ -1,0 +1,19 @@
+
+
+  a{
+     color: #FFFFFF;
+     font-size: 18px;
+  }
+li a{
+    color: #222222;
+    font-size: 16px;
+}
+  body {
+  background: url("../img/grid.png") repeat-x;
+  background-attachment: fixed;
+}
+
+textarea{
+width: 358px;
+}
+
