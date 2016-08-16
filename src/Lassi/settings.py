@@ -71,7 +71,7 @@ REST_FRAMEWORK = {
 
 CORS_ORIGIN_ALLOW_ALL = True
 
-CORS_URLS_REGEX = r'^dash/pages/streamResponse/'
+# CORS_URLS_REGEX = r'^dash/pages/streamResponse/'
 CORS_URLS_REGEX = r'^dashStream/$'
 
 ROOT_URLCONF = 'Lassi.urls'
@@ -95,12 +95,11 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'lassi',
         'USER': 'root',
-        'PASSWORD': '656544',
+        'PASSWORD': '9670',
         'HOST': 'localhost',   # Or an IP Address that your DB is hosted on
         'PORT': '3306',
     }
 }
-
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.7/topics/i18n/
@@ -122,15 +121,10 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 # Template Location
-TEMPLATE_DIRS = (
-    os.path.join(os.path.dirname(BASE_DIR),"static","templates"),
-)
+TEMPLATE_DIRS = (os.path.join(os.path.dirname(BASE_DIR), "static", "templates"),)
 
 if DEBUG:
     MEDIA_URL = '/media/'
-    STATIC_ROOT = os.path.join(os.path.dirname(BASE_DIR),"static","static-only")
-    MEDIA_ROOT =  os.path.join(os.path.dirname(BASE_DIR),"static","media")
-    STATICFILES_DIRS = (
-            os.path.join(os.path.dirname(BASE_DIR),"static","static"),
-
-    )
+    STATIC_ROOT = os.path.join(os.path.dirname(BASE_DIR), "static", "static-only")
+    MEDIA_ROOT = os.path.join(os.path.dirname(BASE_DIR), "static", "media")
+    STATICFILES_DIRS = (os.path.join(os.path.dirname(BASE_DIR), "static", "static"),)

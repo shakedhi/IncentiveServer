@@ -387,7 +387,7 @@ class Config(object):
 
     conf['user'] = 'root'
 
-    conf['password'] = '656544'
+    conf['password'] = '9670'
 
     conf['host'] = 'localhost'
 
