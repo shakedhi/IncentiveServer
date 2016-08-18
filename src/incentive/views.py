@@ -1,60 +1,54 @@
 from __future__ import division
+from django.core.urlresolvers import reverse
 from django.contrib import messages
-
 from django.contrib.auth.models import User, Group
 from django.http.response import HttpResponseNotFound, HttpResponseBadRequest
-from rest_framework import viewsets
-from django.http import HttpResponse, StreamingHttpResponse
+from django.http import HttpResponse, StreamingHttpResponse, HttpResponseRedirect
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import condition
+from django.shortcuts import render_to_response
+from django.template import RequestContext
+from rest_framework import viewsets, renderers, permissions, status, generics, mixins
 from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
-from models import Incentive, Tag
-from serializers import IncentiveSerializer, UserSerializer
 from rest_framework.decorators import detail_route
-from rest_framework import renderers, permissions, status, generics, mixins
-from permissions import IsOwnerOrReadOnly
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from StringIO import StringIO
-import urllib2, json
 from rest_framework.authtoken.models import Token
-
-from django.shortcuts import render_to_response
-from django.template import RequestContext
-from django.http import HttpResponseRedirect
-from django.core.urlresolvers import reverse
-
-from models import Document
-from forms import DocumentForm
-import MySQLdb
-from forms import IncentiveFrom
+from models import Incentive, Tag, Document, Timeout
+from serializers import IncentiveSerializer, UserSerializer
+from permissions import IsOwnerOrReadOnly
+from forms import DocumentForm, IncentiveForm, getUserForm, TimeoutForm
 from json import JSONEncoder
-import datetime
-from Predictor import dis_predictor
 from contextlib import closing
+from runner import getTheBestForTheUser
+from Config import Config as MConf
+import urllib2
+import json
+import MySQLdb
+import datetime
 import sys
+
+cnf = MConf.Config().conf
 
 
 @csrf_exempt
 def dashStream(request):
-    conn = MySQLdb.connect(host="localhost", user="root", passwd="9670", db="streamer")
-    datetimeO = str(request.REQUEST.dicts[0][u'date'])
+    conn = MySQLdb.connect(host=cnf['host'], user=cnf['user'], passwd=cnf['password'], db=cnf['db'])
+    datetime_o = str(request.REQUEST.dicts[0][u'date'])
     cursor = conn.cursor()
+    data = []
     try:
-        data = []
-        cursor.execute("SELECT user_id,created_at FROM stream WHERE created_at>=%s" % (datetimeO))
-
+        cursor.execute("SELECT user_id,created_at FROM stream WHERE created_at>=%s" % datetime_o)
         rows = cursor.fetchall()
         for row in rows:
             data.insert(0, '{"user_id":"' + row[0] + '","created_at":"' + str(row[1]) + '"}')
-
-
-    except MySQLdb.Error as e:
+    except MySQLdb.Error:
         conn.rollback()
     conn.close()
-    jDate = json.dumps(data)
-    return HttpResponse(jDate)
+    j_date = json.dumps(data)
+    return HttpResponse(j_date)
 
 
 def home(request):
@@ -79,7 +73,7 @@ def aboutus(request):
 
 
 def addIncentive(request):
-    form = IncentiveFrom(request.POST or None)
+    form = IncentiveForm(request.POST or None)
     if form.is_valid():
         save_it = form.save(commit=False)
         save_it.save()
@@ -121,7 +115,6 @@ class JSONResponse(HttpResponse):
     """
     An HttpResponse that renders its content into JSON.
     """
-
     def __init__(self, data, **kwargs):
         content = JSONRenderer().render(data)
         kwargs['content_type'] = 'application/json'
@@ -183,13 +176,12 @@ def incetive_list(request):
         tmp = dict(staa.lists())
         token = tmp[u'Token']
         t = str(token[0])
-        testToken = None
         try:
-            testToken = Token.objects.get(key=token[0])
+            test_token = Token.objects.get(key=token[0])
         except:
-            testToken = None
+            test_token = None
         incentive = None
-        if (testToken is not None):
+        if test_token is not None:
             for key in tmp:
                 if key == 'tagID':
                     tags = Tag.objects.filter(tagID=tmp[key][0])
@@ -276,33 +268,26 @@ def incentiveTest(request):
     (as a plain argument, or from a textfile's URL)
     Returns an indented JSON structure
     """
-
     # Store HTTP GET arguments
     plain_text = request.GET.get('s', default=None)
     textfile_url = request.GET.get('URL', default=None)
-    io = StringIO()
     if plain_text is None:
-        return Response(json.dumps(
-            {'incentive': "Send Email"
-             },
-            indent=4))
+        return Response(json.dumps({'incentive': 'Send Email'}, indent=4))
 
     # Execute WebService specific task
     # here, converting a string to upper-casing
     if plain_text is not None:
-        return Response(json.dumps(
-            {'input': plain_text,
-             'result': plain_text.upper()
-             },
-            indent=4))
+        return Response(json.dumps({
+            'input': plain_text,
+            'result': plain_text.upper()
+            }, indent=4))
 
     elif textfile_url is not None:
         textfile = urllib2.urlopen(textfile_url).read()
-        return Response(json.dumps(
-            {'input': textfile,
-             'output': '\n'.join([line.upper() for line in textfile.split('\n')])
-             },
-            indent=4))
+        return Response(json.dumps({
+            'input': textfile,
+            'output': '\n'.join([line.upper() for line in textfile.split('\n')])
+            }, indent=4))
 
 
 def list(request):
@@ -327,8 +312,24 @@ def list(request):
     return render_to_response('list.html', locals(), context_instance=RequestContext(request))
 
 
-from runner import getTheBestForTheUser
-from forms import getUserForm
+@csrf_exempt
+def changeTimeout(request):
+    try:
+        conn = MySQLdb.connect(host=cnf['host'], user=cnf['user'], passwd=cnf['password'], db='lassi')
+        conn.autocommit(True)
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM incentive_timeout')
+        rows = cursor.fetchall()
+        initial_value = rows[0][0]
+    except:
+        initial_value = 10
+
+    form = TimeoutForm(request.POST or None, initial={'timeout': initial_value})
+    if form.is_valid():
+        save_it = form.save(commit=False)
+        save_it.save()
+        messages.success(request, 'The timeout has been updated!')
+    return render_to_response("timeout.html", locals(), context_instance=RequestContext(request))
 
 
 @csrf_exempt
@@ -338,10 +339,10 @@ def getUserID(request):
         if form.is_valid():
             newdoc = str(form.data[u'userID'])
             date = str(form.data[u'created_at'])
-            BestIncentive = getTheBestForTheUser(request, newdoc, date).content
+            best_incentive = getTheBestForTheUser(request, newdoc, date).content
             # Redirect to the document list after POST
             # Render list page with the documents and the form
-            return HttpResponse(json.dumps(BestIncentive))
+            return HttpResponse(json.dumps(best_incentive))
             # return render_to_response('GetUser.html', locals(), context_instance=RequestContext(request))
     else:
         form = getUserForm()  # A empty, unbound form
@@ -350,51 +351,16 @@ def getUserID(request):
 
 def userProfile(request):
     # Load documents for the list page
-    incentivesList = []
+    incentives_list = []
     incentives = None
     if request.user.is_active:
         incentives = Incentive.objects.filter(owner=request.user)
         for incentive in incentives:
-            incentivesList.append(str(incentive.schemeID) + ":" + incentive.schemeName)
+            incentives_list.append(str(incentive.schemeID) + ":" + incentive.schemeName)
         documents = Document.objects.filter(owner=request.user)
-        # user=User.objects.get(username=request.user)
+        # user = User.objects.get(username=request.user)
 
-    return render_to_response(
-        'profilePage.html', locals(),
-        context_instance=RequestContext(request)
-    )
-
-
-from django.views.decorators.http import condition
-
-
-class Config(object):
-    conf = dict()
-    # conf['clfFile'] ='/home/ise/Model/dismodel.pkl'
-    # conf['clfFile'] ='/Users/avisegal/models/dtew/dismodel.pkl'
-    conf['clfFile'] = '/home/eran/Documents/Lassi/src/Algorithem/Model/dismodel.pkl'
-
-    # conf['strmLog'] = '/home/ise/Logs/streamer.log'
-    conf['strmLog'] = '/home/shaked/Documents/Logs/streamer.log'
-
-    # conf['predLog'] = '/home/ise/Logs/predictor.log'
-    conf['predLog'] = '/home/shaked/Documents/Logs/predictor.log'
-
-    # conf['dis_predLog'] = '/home/ise/Logs/dis_predictor.log'
-    conf['dis_predLog'] = '/home/shaked/Documents/Logs/dis_predictor.log'
-
-    conf['debug'] = False
-
-    conf['user'] = 'root'
-
-    conf['password'] = '9670'
-
-    conf['host'] = 'localhost'
-
-    conf['db'] = 'streamer'
-
-
-cnf = Config().conf
+    return render_to_response('profilePage.html', locals(), context_instance=RequestContext(request))
 
 
 @condition(etag_func=None)
@@ -414,11 +380,12 @@ def stream_response_generator2():
 @csrf_exempt
 def stream_response_generator():
     try:
-        conn = MySQLdb.connect(host="localhost", user="root", passwd="9670", db="streamer")
+        conn = MySQLdb.connect(host=cnf['host'], user=cnf['user'], passwd=cnf['password'], db=cnf['db'])
         conn.autocommit(True)
         cursor = conn.cursor()
     except:
         return
+
     local_time = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
     while True:
         cursor.execute(
@@ -435,7 +402,7 @@ def stream_response_generator():
             user_id = row[1]
             created_at = row[2]
             intervention_id = row[3]
-            jsonToStream = JSONEncoder().encode({
+            json_to_stream = JSONEncoder().encode({
                 "id": str(id),
                 "user_id": str(user_id),
                 "created_at": str(created_at),
@@ -444,7 +411,7 @@ def stream_response_generator():
             if created_at.strftime('%Y-%m-%d %H:%M:%S') > local_time:
                 local_time = (created_at + datetime.timedelta(seconds=1)).strftime('%Y-%m-%d %H:%M:%S')
             try:
-                yield jsonToStream
+                yield json_to_stream
                 yield "\n"
             except:
                 continue
@@ -453,11 +420,12 @@ def stream_response_generator():
 @csrf_exempt
 def ask_by_date(request):
     try:
-        conn = MySQLdb.connect(host="localhost", user="root", passwd="9670", db="streamer")
+        conn = MySQLdb.connect(host=cnf['host'], user=cnf['user'], passwd=cnf['password'], db=cnf['db'])
         conn.autocommit(True)
         cursor = conn.cursor()
     except:
         return HttpResponseBadRequest()
+
     local_time = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
     search = True
     response = []
@@ -471,7 +439,7 @@ def ask_by_date(request):
         for row in rows:
             if (row is None) or (len(row) < 8):
                 continue
-            id = row[0]
+            row_id = row[0]
             user_id = row[1]
             created_at = row[2]
             intervention_id = row[3]
@@ -479,8 +447,8 @@ def ask_by_date(request):
             cohort_id = row[5]
             algo_info = row[6]
             country_name = row[7]
-            jsonToSend = JSONEncoder().encode({
-                "id": id,
+            json_to_send = JSONEncoder().encode({
+                "id": str(row_id),
                 "user_id": str(user_id),
                 "created_at": str(created_at),
                 "intervention_id": str(intervention_id),
@@ -489,31 +457,30 @@ def ask_by_date(request):
                 "algo_info": str(algo_info),
                 "country_name": str(country_name)
             })
-            response.append(jsonToSend)
+            response.append(json_to_send)
             response.append('\n')
     return HttpResponse(response)
 
 
 @csrf_exempt
 def ask_gt_id(request):
-    record_id = request.GET['record_id']
+    record_id = request.GET.get('record_id', 0)  # fixxxxxxxxxxxxxx
 
     print record_id
 
     try:
-        conn = MySQLdb.connect(host="localhost", user="root", passwd="9670", db="streamer")
+        conn = MySQLdb.connect(host=cnf['host'], user=cnf['user'], passwd=cnf['password'], db=cnf['db'])
         conn.autocommit(True)
         cursor = conn.cursor()
     except:
         return HttpResponseBadRequest()
     response = []
-    cursor.execute(
-        'SELECT id,user_id,created_at,intervention_id,preconfigured_id,cohort_id,algo_info,country_name FROM stream WHERE (id>"%s") and (user_id!="Not Logged In") and intervention_id is Not NULL' % record_id)
+    cursor.execute('SELECT id,user_id,created_at,intervention_id,preconfigured_id,cohort_id,algo_info,country_name FROM stream WHERE (id>"%s") and (user_id!="Not Logged In") and intervention_id is Not NULL' % record_id)
     rows = cursor.fetchall()
     for row in rows:
         if (row is None) or (len(row) < 8):
             continue
-        id = row[0]
+        row_id = row[0]
         user_id = row[1]
         created_at = row[2]
         intervention_id = row[3]
@@ -521,8 +488,8 @@ def ask_gt_id(request):
         cohort_id = row[5]
         algo_info = row[6]
         country_name = row[7]
-        jsonToSend = JSONEncoder().encode({
-            "id": id,
+        json_to_send = JSONEncoder().encode({
+            "id": str(row_id),
             "user_id": str(user_id),
             "created_at": str(created_at),
             "intervention_id": str(intervention_id),
@@ -531,7 +498,7 @@ def ask_gt_id(request):
             "algo_info": str(algo_info),
             "country_name": str(country_name)
         })
-        response.append(jsonToSend)
+        response.append(json_to_send)
         response.append('\n')
     return HttpResponse(response)
 
@@ -548,7 +515,7 @@ def GiveRatio(request):
         conn.autocommit(True)
         cursor = conn.cursor()
 
-        cursor.execute('SELECT  count(*) AS count  FROM stream WHERE algo_info =  "1"')
+        cursor.execute('SELECT count(*) AS count FROM stream WHERE algo_info = "1"')
         rows = cursor.fetchall()
         if len(rows) == 0:
             return JSONResponse('{"DB":"Unable to read db"}')
@@ -558,7 +525,7 @@ def GiveRatio(request):
             except:
                 return JSONResponse('{"DB":"Unable to read db"}')
 
-        cursor.execute('SELECT  count(*) AS count  FROM stream WHERE algo_info =  "0"')
+        cursor.execute('SELECT count(*) AS count FROM stream WHERE algo_info = "0"')
         rows = cursor.fetchall()
         if len(rows) == 0:
             return JSONResponse('{"DB":"Unable to read db"}')
@@ -571,11 +538,11 @@ def GiveRatio(request):
             l = ones / (ones + zeros)
             s = zeros / (ones + zeros)
 
-        ratio = []
+        ratio = list()
         ratio.append("{\"l\":" + str(l) + ",\"s\":" + str(s) + "}")
-        jsonIncentive = json.dumps(ratio)
-        print jsonIncentive
-        return JSONResponse(jsonIncentive)
+        json_incentive = json.dumps(ratio)
+        print json_incentive
+        return JSONResponse(json_incentive)
     except:
         return JSONResponse('{"DB":"Error"}')
 
@@ -610,8 +577,7 @@ def receive_event(request):
             additional_info = received_json_data['additional_info']
         else:
             additional_info = None
-        if sql(
-                """INSERT INTO events (source,event_type,timestamp,user_id,experiment_name,project,additional_info) VALUES (%s,%s,%s,%s,%s,%s,%s)""",
+        if sql("INSERT INTO events (source,event_type,timestamp,user_id,experiment_name,project,additional_info) VALUES (%s,%s,%s,%s,%s,%s,%s)",
                 (source, event_type, timestamp, user_id, experiment_name, project, additional_info)):
             return HttpResponse("OK")
         else:

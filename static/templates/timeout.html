@@ -4,7 +4,7 @@
     <!-- Main jumbotron for a primary marketing message or call to action -->
     <div class="jumbotron">
       <div class="container">
-        <h1>Incentive Page</h1>
+        <h1>Change Timeout</h1>
       </div>
     </div>
 {% endblock %}
@@ -14,15 +14,16 @@
     <div class="col-md-4">
         {% block checkuser %}
             {% if user.is_authenticated %}
-                <h1>Add Incentive:</h1>
-                <form method='POST' action=''>
+                <form action="{% url "changeTimeout" %}" method="post">
                     {% csrf_token %}
+                    {{ form.non_field_errors }}
                     {{form.as_p}}
-                    <input type="submit" class="btn btn-success btn-block"/>
+                    <p><input type="submit" class="btn btn-success" value="Change" style="width: 237px"/></p>
                 </form>
             {% else %}
                 <h1>You Need to Sign In first</h1>
             {% endif %}
-        {% endblock%}
+        {% endblock %}
     </div>
+    <div class="col-md-4"></div>
 {% endblock %}

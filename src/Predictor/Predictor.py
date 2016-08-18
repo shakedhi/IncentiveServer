@@ -116,13 +116,27 @@ def prediction_loop():
             continue
 
 
+def current_timeout():
+    try:
+        conn = MySQLdb.connect(host=cnf['host'], user=cnf['user'], passwd=cnf['password'], db='lassi')
+        conn.autocommit(True)
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM incentive_timeout')
+        rows = cursor.fetchall()
+        initial_value = rows[0][0]
+    except:
+        initial_value = 10
+    return initial_value
+
+
 def intervene(row_id, collective_id, arrival_time):
     try:
-        timeout = 10
+        timeout = current_timeout()
         app_log.info('timeout_for_collective(' + collective_id + ') for ' + str(timeout) + ' seconds\n')
 
         curr_time = datetime.datetime.utcnow()
-        time_diff = (curr_time - arrival_time).total_seconds()
+        time_diff = (curr_time - arrival_time).total_seconds() / 60
+        time_diff = round(time_diff, 0)
         if time_diff < timeout:
             time.sleep(timeout - time_diff)
 

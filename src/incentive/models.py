@@ -72,3 +72,21 @@ class Incentive(models.Model):
 class Document(models.Model):
     owner = models.ForeignKey('auth.User', related_name='document')
     docfile = models.FileField(upload_to='documents/%Y/%m/%d')
+
+
+class Timeout(models.Model):
+    timeout = models.IntegerField(null=False)
+
+    def current_timeout(self):
+        return Timeout.objects.all().first()
+
+    def save(self, *args, **kwargs):
+        """
+        Use the `pygments` library to create a highlighted HTML
+        representation of the code snippet.
+        """
+        Timeout.objects.all().delete()
+        super(Timeout, self).save(*args, **kwargs)
+
+    class Meta:
+        ordering = ('timeout',)

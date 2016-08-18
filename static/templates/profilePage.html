@@ -15,34 +15,33 @@
 
 {% endblock %}
 {% block content %}
-		<!-- List of uploaded documents -->
+	<!-- List of uploaded documents -->
     {% block checkuser %}
-                                {% if user.is_authenticated %}
-		{% if incentives %}
-            <h3>Incentive:</h3>
-			<ul>
-			{% for incentive in incentivesList %}
-				<li style="font-size: 16px">{{ incentive }}</li>
-			{% endfor %}
-			</ul>
+        {% if user.is_authenticated %}
+            {% if incentives %}
+                <h3>Incentive:</h3>
+                <ul>
+                {% for incentive in incentives_list %}
+                    <li style="font-size: 16px">{{ incentive }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
 
-		{% endif %}
-                                                <hr>
-
+            <hr>
             <h3>Data Sets:</h3>
 
-        {% if documents %}
-			<ul>
-			{% for document in documents %}
-				<li ><a href="{{ document.docfile.url }}" style="color: #222222; font-size: 16px;">{{ document.docfile.name }}</a></li>
-			{% endfor %}
-			</ul>
-		{% else %}
-			<p>No data set was uploaded yet.</p>
-		{% endif %}
-
-         {% else %}
-            <h1>You Need to Sign In first</h1>
+            {% if documents %}
+                <ul>
+                {% for document in documents %}
+                    <li ><a href="{{ document.docfile.url }}" style="color: #222222; font-size: 16px;">{{ document.docfile.name }}</a></li>
+                {% endfor %}
+                </ul>
+            {% else %}
+                <p>No data set was uploaded yet.</p>
             {% endif %}
-            {% endblock%}
+
+        {% else %}
+            <h1>You Need to Sign In first</h1>
+        {% endif %}
+    {% endblock%}
 {% endblock %}

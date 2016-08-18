@@ -73,6 +73,7 @@ urlpatterns = [
     url(r'^profile/', 'incentive.views.userProfile', name='profile_page'),
     url(r'^startAlg/', 'incentive.runner.startAlg', name='startAlg'),
     url(r'^predicting/', 'incentive.runner.getTheBestForTheUser', name='predicting'),
+    url(r'^timeout/$', 'incentive.views.changeTimeout', name='changeTimeout'),
 
     url(r'^getIncUser/$', 'incentive.views.getUserID', name='getIncUser'),
     url(r'^dash/pages/dash.html', views.dash, name='dash'),

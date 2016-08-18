@@ -29,21 +29,22 @@ def startAlg(request):
 
 
 @csrf_exempt
-def getTheBestForTheUser(request, userID, created_at):
+def getTheBestForTheUser(request, user_id, created_at):
     global Alg
     try:
-        incentive = Alg.predicting(userID, created_at)
+        incentive = [1]  # TODO: Alg.predicting(userID, created_at)
         if incentive[0] == 1:
-            intervention_id = send_intervention_for_user(userID)
-            jsonIncentive = JSONEncoder().encode({
-                "userID": str(userID),
-                "message": "Intervention sent, intervention id: " + intervention_id
+            intervention_id = 1  # TODO: send_intervention_for_user(userID)
+            json_incentive = JSONEncoder().encode({
+                "userID": str(user_id),
+                "message": "Intervention sent, intervention id: " + str(intervention_id)
             })
-
         else:
-            jsonIncentive = '{"userID":"' + str(userID) + '","message":" Staying"}'
-
-        return JSONResponse(jsonIncentive)
+            json_incentive = JSONEncoder().encode({
+                "userID": str(user_id),
+                "message": "Staying"
+            })
+        return JSONResponse(json_incentive)
     except:
         return JSONResponse('{"Alg":"Error"}')
 
@@ -53,10 +54,10 @@ def GiveRatio(request):
     global Alg
     try:
         l, s = Alg.disratio()
-        ratio = []
+        ratio = list()
         ratio.append("{\"l\":" + str(l) + ",\"s\":" + str(s) + "}")
-        jsonIncentive = json.dumps(ratio)
-        return JSONResponse(jsonIncentive)
+        json_incentive = json.dumps(ratio)
+        return JSONResponse(json_incentive)
     except:
         return JSONResponse('{"Alg":"Error"}')
 
@@ -72,9 +73,9 @@ class JSONResponse(HttpResponse):
         super(JSONResponse, self).__init__(content, **kwargs)
 
 
-def send_intervention_for_user(userId):
+def send_intervention_for_user(user_id):
     with requests.Session() as c:
-        url = "http://experiments.zooniverse.org/users/" + userId + "/interventions"
+        url = "http://experiments.zooniverse.org/users/" + user_id + "/interventions"
         payload = {
             "project": "galaxy_zoo",
             "intervention_type": "prompt user about talk",
@@ -91,29 +92,11 @@ def send_intervention_for_user(userId):
         try:
             content = json.loads(request.content)
             intervention_id = content['id']
-            print 'SUCCESS send_intervention_for_user(' + userId + '):' + intervention_id
+            print 'SUCCESS send_intervention_for_user(' + user_id + '):' + intervention_id
             return intervention_id
         except:
-            print 'ERROR: send_intervention_for_user(' + userId + '):'
+            print 'ERROR: send_intervention_for_user(' + user_id + '):'
             return "-1"
-
-
-def Pusher(userId, projectID, cohort_id, preconfigured_id, text_message, intervention_channel):
-    with requests.Session() as c:
-        url = "http://experiments.zooniverse.org/users/" + userId + "/interventions"
-        payload = {
-            'project': projectID,
-            'intervention_type': 'interrupt',
-            'cohort_id': cohort_id,
-            'preconfigured_id': preconfigured_id,
-            'text_message': text_message,
-            'intervention_duration': '0',
-            'intervention_channel': intervention_channel,
-            'take_action': 'immediately',
-        }
-
-        request = c.post(url, data=payload)
-        print (request.content)
 
 
 class dis_predictor:
@@ -142,8 +125,6 @@ class dis_predictor:
         self.user_past_tasks = []  # session0_tasks, session1_tasks, session2_tasks, ....
         self.user_current_session_stats = []  # timestamp_of_previous_task_in_this_session, this_sessions_tasks_count, this session_dwell_time, this_session_min_dwell_time, this_session_time
         self.user_past_session_stats = []  # past_sessions_count, total_tasks_count, total_sessions_time, total_dwell_time
-        # '/home/eran/Documents/Lassi/src/Algorithem/Model/dismodel.pkl'
-        # '/home/ise/Model/dismodel.pkl'
         self.clf = joblib.load('/home/ise/Model/dismodel.pkl')
         logging.info("Finished Loading  Model")
 
@@ -157,7 +138,7 @@ class dis_predictor:
         clastseenidx = 0
         ctaskidx = 1
         cdwellidx = 2
-        cmdwellidx = 3;
+        cmdwellidx = 3
         csstartidx = 4
 
         # get integer user_id from dictionary or create new if non existent
@@ -288,7 +269,7 @@ class dis_predictor:
             u_sessionAvgDwellvsRecentAvg = this_session_dwell_time - self.avg(
                 self.user_past_session_dwell_time[user_id][-len3:])
 
-        X_t = np.array([u_bHavePastSession,
+        x_t = np.array([u_bHavePastSession,
                         u_sessionCount,
                         u_avgSessionTasks,
                         u_medianSessionTasks,
@@ -304,16 +285,16 @@ class dis_predictor:
                         s_avgDwell,
                         s_sessionTasks,
                         s_sessionTime])
-        return X_t
+        return x_t
 
     # Predicting
     def predicting(self, user_id, created_at):
         # logging.info("Starting prediction for User " + user_id)
-        X_test = self.fe(user_id, created_at)
-        y_predicted = self.clf.predict(X_test)
+        x_test = self.fe(user_id, created_at)
+        y_predicted = self.clf.predict(x_test)
         if y_predicted == 1:
             self.y_leaving += 1
-            #   print('User Leaving')
+            #  print('User Leaving')
         else:
             self.y_staying += 1
             #  print('User Staying')
