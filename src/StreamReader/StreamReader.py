@@ -44,7 +44,8 @@ def sql(user_id, city_name, country_name, project, subjects, created_at):
         datet = parse(created_at)
         create_time = datetime.datetime(datet.year, datet.month, datet.day, datet.hour, datet.minute, datet.second)
         cursor.execute(
-            "INSERT INTO stream (user_id,project,subjects,created_at,country_name,city_name,local_time) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+            "INSERT INTO stream (user_id,project,subjects,created_at,country_name,city_name,local_time) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s)",
             (user_id, project, subjects, create_time, country_name, city_name, local_time))
         conn.commit()
     except MySQLdb.Error as e:
@@ -56,7 +57,7 @@ def sql(user_id, city_name, country_name, project, subjects, created_at):
 def channel_callback(data):
     x = yaml.load(str(data))
 
-    if x['project'] == "smartcom":
+    if x['project'] == "SmartSociety":
         app_log.info("User:{0} Record added.\n".format(x['user_id']))
         sql(x['user_id'], x['geo']['city_name'], x['geo']['country_name'], x['project'], x['subjects'], x['created_at'])
 
@@ -67,13 +68,11 @@ def connect_handler(data):
 
 
 if __name__ == "__main__":
-    global pusher
     app_log.info("Starting Stream\n")
-    appkey = "bf548749c8760edbe3b6"
 
     while True:
         try:
-            pusher = pusherclient.Pusher(appkey)
+            pusher = pusherclient.Pusher(key="bf548749c8760edbe3b6")
             pusher.connection.bind('pusher:connection_established', connect_handler)
             pusher.connect()
 
@@ -94,4 +93,3 @@ if __name__ == "__main__":
             continue
 
     app_log.info("Stream Closed\n")
-

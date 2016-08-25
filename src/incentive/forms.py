@@ -1,5 +1,5 @@
 from django import forms
-from .models import Incentive, Timeout
+from .models import Incentive, Timeout, User
 
 
 class IncentiveForm(forms.ModelForm):
@@ -15,9 +15,13 @@ class DocumentForm(forms.Form):
     )
 
 
-class getUserForm(forms.Form):
-    userID = forms.CharField(label='userID')
-    created_at = forms.CharField(label='created_at', max_length=1000)
+class UserForm(forms.Form):
+    user_id = forms.CharField(required=True)
+    created_at = forms.CharField(required=True)
+
+    class Meta:
+        model = User
+        ordering = ('user_id', 'created_at')
 
 
 class TimeoutForm(forms.ModelForm):

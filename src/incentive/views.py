@@ -2,13 +2,13 @@ from __future__ import division
 from django.core.urlresolvers import reverse
 from django.contrib import messages
 from django.contrib.auth.models import User, Group
-from django.http.response import HttpResponseNotFound, HttpResponseBadRequest
+from django.http.response import HttpResponseBadRequest
 from django.http import HttpResponse, StreamingHttpResponse, HttpResponseRedirect
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import condition
 from django.shortcuts import render_to_response
 from django.template import RequestContext
-from rest_framework import viewsets, renderers, permissions, status, generics, mixins
+from rest_framework import viewsets, renderers, permissions
 from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
 from rest_framework.decorators import detail_route
@@ -16,13 +16,13 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework.authtoken.models import Token
-from models import Incentive, Tag, Document, Timeout
+from models import Incentive, Tag, Document
 from serializers import IncentiveSerializer, UserSerializer
 from permissions import IsOwnerOrReadOnly
-from forms import DocumentForm, IncentiveForm, getUserForm, TimeoutForm
+from forms import DocumentForm, IncentiveForm, UserForm, TimeoutForm
 from json import JSONEncoder
 from contextlib import closing
-from runner import getTheBestForTheUser
+from runner import get_the_best_for_user
 from Config import Config as MConf
 import urllib2
 import json
@@ -34,9 +34,9 @@ cnf = MConf.Config().conf
 
 
 @csrf_exempt
-def dashStream(request):
+def dash_stream(request):
     conn = MySQLdb.connect(host=cnf['host'], user=cnf['user'], passwd=cnf['password'], db=cnf['db'])
-    datetime_o = str(request.REQUEST.dicts[0][u'date'])
+    datetime_o = str(request.REQUEST.get(u'date', 0))
     cursor = conn.cursor()
     data = []
     try:
@@ -72,7 +72,7 @@ def aboutus(request):
     return render_to_response("aboutus.html", locals(), context_instance=RequestContext(request))
 
 
-def addIncentive(request):
+def add_incentive(request):
     form = IncentiveForm(request.POST or None)
     if form.is_valid():
         save_it = form.save(commit=False)
@@ -89,7 +89,7 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
 
 
-class IncetiveViewSet(viewsets.ModelViewSet):
+class IncentiveViewSet(viewsets.ModelViewSet):
     """
     This viewset automatically provides `list`, `create`, `retrieve`,
     `update` and `destroy` actions.
@@ -129,23 +129,23 @@ class JSONResponse(HttpResponse):
 #         incentive = self.get_object()
 #         return Response(incentive.highlighted)
 
-class IncentiveView(APIView):
-    """
-    View to list all users in the system.
-
-    * Requires token authentication.
-    * Only admin users are able to access this view.
-    """
-    queryset = Incentive.objects.all()
-    serializer_class = IncentiveSerializer
-    permission_classes = (permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly,)
-
-    def get(self, request, format=None):
-        """
-        Return a list of all users.
-        """
-        usernames = [incentive.status for incentive in Incentive.objects.all()]
-        return Response(usernames)
+# class IncentiveView(APIView):
+#     """
+#     View to list all users in the system.
+#
+#     * Requires token authentication.
+#     * Only admin users are able to access this view.
+#     """
+#     queryset = Incentive.objects.all()
+#     serializer_class = IncentiveSerializer
+#     permission_classes = (permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly,)
+#
+#     def get(self, request, format=None):
+#         """
+#         Return a list of all users.
+#         """
+#         usernames = [incentive.status for incentive in Incentive.objects.all()]
+#         return Response(usernames)
 
 
 @csrf_exempt
@@ -166,7 +166,7 @@ def login(request):
 
 
 @csrf_exempt
-def incetive_list(request):
+def incentive_list(request):
     """
     List all code snippets, or create a new snippet.
     """
@@ -175,7 +175,6 @@ def incetive_list(request):
         staa = request.GET
         tmp = dict(staa.lists())
         token = tmp[u'Token']
-        t = str(token[0])
         try:
             test_token = Token.objects.get(key=token[0])
         except:
@@ -209,7 +208,7 @@ def incetive_list(request):
 
 
 @csrf_exempt
-def incetive_detail(request, pk):
+def incentive_detail(request, pk):
     """
     Retrieve, update or delete a code snippet.
     """
@@ -236,24 +235,11 @@ def incetive_detail(request, pk):
 
 
 @api_view(('GET',))
-def api_root(request, format=None):
+def api_root(request):
     return Response({
-        'users': reverse('user-list', request=request, format=format),
-        'incentive': reverse('incentive-list', request=request, format=format),
+        'users': reverse('user-list'),
+        'incentive': reverse('incentive-list')
     })
-
-
-# @api_view()
-# def xml(request):
-#     o="Fail-PATH: "
-#     o+=os.path.dirname(__file__)
-#     o+='/Text.xml'
-#     fileName=os.path.dirname(__file__)+'/Test.xml'
-#     if os.path.isfile(fileName):
-#         with open(fileName,'r') as f:
-#            str = f.read().replace('\n', '')
-#         o= xmltodict.parse(str)
-#     return Response(json.dumps(o))
 
 
 @api_view()
@@ -262,7 +248,7 @@ def about(request):
 
 
 @api_view()
-def incentiveTest(request):
+def incentive_test(request):
     """
     Convert given text to uppercase
     (as a plain argument, or from a textfile's URL)
@@ -290,7 +276,7 @@ def incentiveTest(request):
             }, indent=4))
 
 
-def list(request):
+def data_set(request):
     # Handle file upload
     if request.method == 'POST':
         form = DocumentForm(request.POST, request.FILES)
@@ -299,7 +285,7 @@ def list(request):
             newdoc.save()
 
             # Redirect to the document list after POST
-            return HttpResponseRedirect(reverse('incentive.views.list'))
+            return HttpResponseRedirect(reverse('incentive.views.data_set'))
     else:
         form = DocumentForm()  # A empty, unbound form
 
@@ -313,7 +299,7 @@ def list(request):
 
 
 @csrf_exempt
-def changeTimeout(request):
+def change_timeout(request):
     try:
         conn = MySQLdb.connect(host=cnf['host'], user=cnf['user'], passwd=cnf['password'], db='lassi')
         conn.autocommit(True)
@@ -333,23 +319,24 @@ def changeTimeout(request):
 
 
 @csrf_exempt
-def getUserID(request):
+def get_user_id(request):
     if request.method == 'POST':
-        form = getUserForm(request.POST, request.FILES)
+        form = UserForm(request.POST, request.FILES)
         if form.is_valid():
-            newdoc = str(form.data[u'userID'])
+            user_id = str(form.data[u'user_id'])
             date = str(form.data[u'created_at'])
-            best_incentive = getTheBestForTheUser(request, newdoc, date).content
-            # Redirect to the document list after POST
+            best_incentive = get_the_best_for_user(request, user_id, date).content
             # Render list page with the documents and the form
             return HttpResponse(json.dumps(best_incentive))
-            # return render_to_response('GetUser.html', locals(), context_instance=RequestContext(request))
+        else:
+            messages.error(request, 'you need to fill the fields')
+            return render_to_response('GetUser.html', locals(), context_instance=RequestContext(request))
     else:
-        form = getUserForm()  # A empty, unbound form
+        form = UserForm(request.POST or None)  # A empty, unbound form
         return render_to_response('GetUser.html', locals(), context_instance=RequestContext(request))
 
 
-def userProfile(request):
+def user_profile(request):
     # Load documents for the list page
     incentives_list = []
     incentives = None
@@ -388,8 +375,9 @@ def stream_response_generator():
 
     local_time = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
     while True:
-        cursor.execute(
-            'SELECT id,user_id,created_at,intervention_id FROM stream WHERE (local_time>"%s") and intervention_id is Not NULL' % local_time)
+        cursor.execute("SELECT id,user_id,created_at,intervention_id FROM stream "
+                       "WHERE local_time>%s AND user_id!='Not Logged In' AND intervention_id is not NULL"
+                       % local_time)
         rows = cursor.fetchall()
         if len(rows) == 0:
             continue
@@ -398,12 +386,12 @@ def stream_response_generator():
             if (row is None) or (len(row) < 4):
                 print row
                 continue
-            id = row[0]
+            row_id = row[0]
             user_id = row[1]
             created_at = row[2]
             intervention_id = row[3]
             json_to_stream = JSONEncoder().encode({
-                "id": str(id),
+                "id": str(row_id),
                 "user_id": str(user_id),
                 "created_at": str(created_at),
                 "intervention_id": str(intervention_id)
@@ -430,8 +418,9 @@ def ask_by_date(request):
     search = True
     response = []
     while search:
-        cursor.execute(
-            'SELECT id,user_id,created_at,intervention_id,preconfigured_id,cohort_id,algo_info,country_name FROM stream WHERE (local_time>"%s")  and (user_id!="Not Logged In") and intervention_id is Not NULL' % local_time)
+        cursor.execute("SELECT id,user_id,created_at,intervention_id,preconfigured_id,cohort_id,algo_info,country_name "
+                       "FROM stream WHERE local_time>%s AND user_id!='Not Logged In' AND intervention_id is not NULL"
+                       % local_time)
         rows = cursor.fetchall()
         if len(rows) == 0:
             continue
@@ -464,8 +453,7 @@ def ask_by_date(request):
 
 @csrf_exempt
 def ask_gt_id(request):
-    record_id = request.GET.get('record_id', 0)  # fixxxxxxxxxxxxxx
-
+    record_id = request.GET.get('record_id', 0)
     print record_id
 
     try:
@@ -475,7 +463,8 @@ def ask_gt_id(request):
     except:
         return HttpResponseBadRequest()
     response = []
-    cursor.execute('SELECT id,user_id,created_at,intervention_id,preconfigured_id,cohort_id,algo_info,country_name FROM stream WHERE (id>"%s") and (user_id!="Not Logged In") and intervention_id is Not NULL' % record_id)
+    cursor.execute("SELECT id,user_id,created_at,intervention_id,preconfigured_id,cohort_id,algo_info,country_name "
+                   "FROM stream WHERE id>%s AND user_id!='Not Logged In' AND intervention_id is not NULL" % record_id)
     rows = cursor.fetchall()
     for row in rows:
         if (row is None) or (len(row) < 8):
@@ -504,7 +493,7 @@ def ask_gt_id(request):
 
 
 @csrf_exempt
-def GiveRatio(request):
+def give_ratio(request):
     print "Give Ratio Requested"
     ones = 0
     zeros = 0
@@ -515,7 +504,7 @@ def GiveRatio(request):
         conn.autocommit(True)
         cursor = conn.cursor()
 
-        cursor.execute('SELECT count(*) AS count FROM stream WHERE algo_info = "1"')
+        cursor.execute("SELECT count(*) AS count FROM stream WHERE algo_info = '1'")
         rows = cursor.fetchall()
         if len(rows) == 0:
             return JSONResponse('{"DB":"Unable to read db"}')
@@ -525,7 +514,7 @@ def GiveRatio(request):
             except:
                 return JSONResponse('{"DB":"Unable to read db"}')
 
-        cursor.execute('SELECT count(*) AS count FROM stream WHERE algo_info = "0"')
+        cursor.execute("SELECT count(*) AS count FROM stream WHERE algo_info = '0'")
         rows = cursor.fetchall()
         if len(rows) == 0:
             return JSONResponse('{"DB":"Unable to read db"}')
@@ -577,8 +566,9 @@ def receive_event(request):
             additional_info = received_json_data['additional_info']
         else:
             additional_info = None
-        if sql("INSERT INTO events (source,event_type,timestamp,user_id,experiment_name,project,additional_info) VALUES (%s,%s,%s,%s,%s,%s,%s)",
-                (source, event_type, timestamp, user_id, experiment_name, project, additional_info)):
+        if sql("INSERT INTO events (source,event_type,timestamp,user_id,experiment_name,project,additional_info) "
+               "VALUES (%s,%s,%s,%s,%s,%s,%s)",
+               (source, event_type, timestamp, user_id, experiment_name, project, additional_info)):
             return HttpResponse("OK")
         else:
             return HttpResponseBadRequest("Unable to save event.")

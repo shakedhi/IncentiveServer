@@ -19,7 +19,7 @@ Alg = None
 
 
 @csrf_exempt
-def startAlg(request):
+def start_alg(request):
     try:
         global Alg
         Alg = dis_predictor()
@@ -29,7 +29,7 @@ def startAlg(request):
 
 
 @csrf_exempt
-def getTheBestForTheUser(request, user_id, created_at):
+def get_the_best_for_user(request, user_id, created_at):
     global Alg
     try:
         incentive = [1]  # TODO: Alg.predicting(userID, created_at)
@@ -50,7 +50,7 @@ def getTheBestForTheUser(request, user_id, created_at):
 
 
 @csrf_exempt
-def GiveRatio(request):
+def give_ratio(request):
     global Alg
     try:
         l, s = Alg.disratio()

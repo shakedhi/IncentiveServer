@@ -20,15 +20,14 @@
 				</ul>
 			{% endif %}
 
-			<hr>
-		    <!-- Upload form. Note enctype attribute! -->
-			<form action="{% url "getIncUser" %}" method="post" enctype="multipart/form-data">
+			<form action="{% url "getIncUser" %}" method="post">
 				{% csrf_token %}
-				<p>{{ form.non_field_errors }}</p>
-                <label for="userID">User ID: </label>
+				{{ form.non_field_errors }}
+                {{ form.as_p }}
+                <!--label for="userID">User ID: </label>
     			<input id="userID" type="text" name="userID" value="{{ user_id }}">
                 <label for="created_at">Created At: </label>
-                <input id="created_at" type="text" name="created_at" value="{{ created_at }}">
+                <input id="created_at" type="text" name="created_at" value="{{ created_at }}"-->
 				<p><input type="submit" value="Get Incentive" /></p>
 			</form>
         {% else %}

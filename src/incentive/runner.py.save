@@ -21,7 +21,7 @@ import logging
 Alg=None
 logger = logging.getLogger(__name__)
 
-def startAlg(request):
+def start_alg(request):
     logger.debug("this is a test  message!")
     try:
         global Alg
@@ -32,7 +32,7 @@ def startAlg(request):
 
 
 @csrf_exempt
-def getTheBestForTheUser(request, userID,created_at):
+def get_the_best_for_user(request, userID,created_at):
     global Alg
     try:
         incentive=Alg.predicting(userID,created_at)
@@ -45,7 +45,7 @@ def getTheBestForTheUser(request, userID,created_at):
     except:
         return JSONResponse("{'err':'Alg Problem'}")
 @csrf_exempt
-def GiveRatio(request):
+def give_ratio(request):
     global Alg
     try:
         l,s=Alg.disratio()

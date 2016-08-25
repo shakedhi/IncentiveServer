@@ -17,7 +17,7 @@
                 <form action="{% url "changeTimeout" %}" method="post">
                     {% csrf_token %}
                     {{ form.non_field_errors }}
-                    {{form.as_p}}
+                    {{ form.as_p }}
                     <p><input type="submit" class="btn btn-success" value="Change" style="width: 237px"/></p>
                 </form>
             {% else %}
