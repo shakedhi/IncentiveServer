@@ -19,8 +19,8 @@ from rest_framework.authtoken.models import Token
 from models import Incentive, Tag, Document
 from serializers import IncentiveSerializer, UserSerializer
 from permissions import IsOwnerOrReadOnly
-from forms import DocumentForm, IncentiveForm, UserForm, TimeoutForm
-from json import JSONEncoder
+from forms import DocumentForm, IncentiveForm, UserForm, TimeoutForm, CollectiveForm, InvalidateForm
+from json import JSONEncoder, JSONDecoder
 from contextlib import closing
 from runner import get_the_best_for_user
 from Config import Config as MConf
@@ -29,8 +29,24 @@ import json
 import MySQLdb
 import datetime
 import sys
+import runner
+import pusher
+import time
 
 cnf = MConf.Config().conf
+Pusher = None
+
+
+def get_pusher():
+    global Pusher
+    if Pusher is None:
+        Pusher = pusher.Pusher(
+            app_id='231267',
+            key='bf548749c8760edbe3b6',
+            secret='6545a7b9465cde9fab73',
+            ssl=True
+        )
+    return Pusher
 
 
 @csrf_exempt
@@ -154,11 +170,10 @@ def login(request):
         data = JSONParser().parse(request)
         username = data[u'username']
         password = data[u'password']
-        user = None
         try:
             user = User.objects.get(username=username)
         except:
-            pass
+            user = None
         if user is not None and user.check_password(password):
             token = Token.objects.get_or_create(user=user)
             return JSONResponse("{'Token':'" + token[0].key + "'}")
@@ -299,6 +314,80 @@ def data_set(request):
 
 
 @csrf_exempt
+def send_incentive_collective(request):
+    if request.method == 'POST':
+        if request.META['CONTENT_TYPE'] == 'application/x-www-form-urlencoded':
+            form = CollectiveForm(request.POST, request.FILES)
+            if form.is_valid():
+                collective_id = str(form.data[u'collective_id'])
+                inc_text = str(form.data[u'incentive_text'])
+                inc_time = str(int(form.data[u'incentive_timestamp']) * 1000)
+                reminder = {
+                    "incentive_type": "reminder",
+                    "incentive_text": inc_text,
+                    "incentive_timestamp": inc_time,
+                    "location": {
+                        "city_name": "Hadera",  # TODO: fix location
+                        "country_name": "Israel"
+                    },
+                    "recipient": {
+                        "type": "collective",
+                        "id": collective_id
+                    }
+                }
+                print reminder
+                get_pusher().trigger('adapter', 'reminder', reminder)
+                messages.success(request, 'Reminder request was sent successfully.')
+                form = CollectiveForm()
+            elif request.META['CONTENT_TYPE'] == 'application/json':
+                messages.warning(request, 'You must fill the required fields.')
+            return render_to_response('sendCollective.html', locals(), context_instance=RequestContext(request))
+        elif request.META['CONTENT_TYPE'] == 'application/json':
+            get_pusher().trigger('adapter', 'reminder', request.body)
+            return JSONResponse('{"reminder":"Success"}')
+    else:
+        form = CollectiveForm(initial={'incentive_timestamp': int(round(time.time()))})
+        return render_to_response('sendCollective.html', locals(), context_instance=RequestContext(request))
+
+
+@csrf_exempt
+def invalidate_from_collective(request, cid):
+    if request.method == 'POST':
+        if request.META['CONTENT_TYPE'] == 'application/x-www-form-urlencoded':
+            form = InvalidateForm(request.POST, request.FILES)
+            if form.is_valid():
+                peer_ids = str(form.data[u'peer_ids']).split(';')
+                inv_peers = []
+                for peer in peer_ids:
+                    pid = peer.strip()
+                    if pid is not '':
+                        inv_peers.append({"type": "peer", "id": pid})
+                invalidate = {
+                    "collective": cid,
+                    "peers": inv_peers
+                }
+                if not inv_peers:
+                    messages.warning(request, 'You must fill field with non-whitespace values.')
+                else:
+                    get_pusher().trigger('adapter', 'invalidate', invalidate)
+                    messages.success(request, 'Peers were invalidated successfully.')
+                    form = InvalidateForm()
+            else:
+                messages.warning(request, 'You must fill the required fields.')
+            return render_to_response('invalidate.html', locals(), context_instance=RequestContext(request))
+        elif request.META['CONTENT_TYPE'] == 'application/json':
+            invalidate = {
+                "collective": cid,
+                "peers": json.loads(request.body)
+            }
+            get_pusher().trigger('adapter', 'invalidate', invalidate)
+            return JSONResponse('{"invalidate":"Success"}')
+    else:
+        form = InvalidateForm()
+        return render_to_response('invalidate.html', locals(), context_instance=RequestContext(request))
+
+
+@csrf_exempt
 def change_timeout(request):
     try:
         conn = MySQLdb.connect(host=cnf['host'], user=cnf['user'], passwd=cnf['password'], db='lassi')
@@ -315,24 +404,35 @@ def change_timeout(request):
         save_it = form.save(commit=False)
         save_it.save()
         messages.success(request, 'The timeout has been updated!')
+    else:
+        messages.warning(request, 'An error occurred.')
     return render_to_response("timeout.html", locals(), context_instance=RequestContext(request))
 
 
 @csrf_exempt
 def get_user_id(request):
     if request.method == 'POST':
-        form = UserForm(request.POST, request.FILES)
-        if form.is_valid():
-            user_id = str(form.data[u'user_id'])
-            date = str(form.data[u'created_at'])
-            best_incentive = get_the_best_for_user(request, user_id, date).content
-            # Render list page with the documents and the form
-            return HttpResponse(json.dumps(best_incentive))
+        if request.META['CONTENT_TYPE'] == 'application/x-www-form-urlencoded':
+            form = UserForm(request.POST, request.FILES)
+            if form.is_valid():
+                user_id = str(form.data[u'user_id'])
+                date = str(form.data[u'created_at'])
+                best_incentive = get_the_best_for_user(request, user_id, date).content
+                best_incentive = json.loads(json.loads(best_incentive))
+                best_incentive_user = best_incentive['userID']
+                best_incentive_message = best_incentive['message']
+                form = UserForm()  # A empty, unbound form
+                return render_to_response('GetUser.html', locals(), context_instance=RequestContext(request))
+            else:
+                messages.warning(request, 'You must fill the required fields.')
+                return render_to_response('GetUser.html', locals(), context_instance=RequestContext(request))
         else:
-            messages.error(request, 'you need to fill the fields')
-            return render_to_response('GetUser.html', locals(), context_instance=RequestContext(request))
+            data = JSONParser().parse(request)
+            user_id = data[u'user_id']
+            date = data[u'created_at']
+            return get_the_best_for_user(request, user_id, date).content
     else:
-        form = UserForm(request.POST or None)  # A empty, unbound form
+        form = UserForm()  # A empty, unbound form
         return render_to_response('GetUser.html', locals(), context_instance=RequestContext(request))
 
 

@@ -3,9 +3,9 @@
 {% block jumbotron %}
     <!-- Main jumbotron for a primary marketing message or call to action -->
     <div class="jumbotron">
-        <div class="container">
-            <h1>Incentive Page</h1>
-        </div>
+      <div class="container">
+        <h1>Invalidate Peer from Collective</h1>
+      </div>
     </div>
 {% endblock %}
 
@@ -14,15 +14,18 @@
     <div class="col-md-4">
         {% block checkuser %}
             {% if user.is_authenticated %}
-                <h1>Add Incentive:</h1>
-                <form method='POST' action=''>
+                <h4>Enter the Peer IDs you want to invalidate, sepereted by semicolon (;).</h4>
+                <br>
+                <form action="{% url "invalidate" cid %}" method="post">
                     {% csrf_token %}
-                    {{form.as_p}}
-                    <input type="submit" class="btn btn-success btn-block"/>
+                    {{ form.non_field_errors }}
+                    {{ form.as_p }}
+                    <p><input type="submit" value="invalidate"/></p>
                 </form>
             {% else %}
                 <h1>You Need to Sign In first</h1>
             {% endif %}
         {% endblock%}
     </div>
+    <div class="col-md-4"></div>
 {% endblock %}

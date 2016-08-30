@@ -83,7 +83,9 @@ urlpatterns = [
     url(r'^ask_by_date/$', views.ask_by_date, name='ask_by_date'),
     url(r'^ask_gt_id/$', views.ask_gt_id, name='ask_gt_id'),
     url(r'^disratio/$', views.give_ratio, name='disratio'),
-    url(r'^add_event/$', views.receive_event, name='receive_event'),
+
+    url(r'^sendToCollective/$', 'incentive.views.send_incentive_collective', name='send_collective'),
+    url(r'^invalidate/(?P<cid>[1-9][0-9]*)/$', 'incentive.views.invalidate_from_collective', name='invalidate'),
 
 ]
 # url(r'^docs/', include('rest_framework_swagger.urls')),

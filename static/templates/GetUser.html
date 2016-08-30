@@ -10,28 +10,26 @@
 {% endblock %}
 
 {% block content %}
-    <!-- List of uploaded documents -->
-    {% block checkuser %}
-        {% if user.is_authenticated %}
-			{% if best_incentive %}
-                <h4>Incentive:</h4>
-				<ul>
-					<li>{{ best_incentive }}</li>
-				</ul>
-			{% endif %}
-
-			<form action="{% url "getIncUser" %}" method="post">
-				{% csrf_token %}
-				{{ form.non_field_errors }}
-                {{ form.as_p }}
-                <!--label for="userID">User ID: </label>
-    			<input id="userID" type="text" name="userID" value="{{ user_id }}">
-                <label for="created_at">Created At: </label>
-                <input id="created_at" type="text" name="created_at" value="{{ created_at }}"-->
-				<p><input type="submit" value="Get Incentive" /></p>
-			</form>
-        {% else %}
-            <h1>You Need to Sign In first</h1>
-        {% endif %}
-    {% endblock%}
+    <div class="col-md-4"></div>
+    <div class="col-md-4">
+        {% block checkuser %}
+            {% if user.is_authenticated %}
+                {% if best_incentive %}
+                    <h3>Incentive:</h3>
+                    <p><b>User ID:</b> {{ best_incentive_user }}</p>
+                    <p><b>Message:</b> {{ best_incentive_message }}</p>
+                {% else %}
+                    <form action="{% url "getIncUser" %}" method="post">
+                        {% csrf_token %}
+                        {{ form.non_field_errors }}
+                        {{ form.as_p }}
+                        <p><input type="submit" value="Get Incentive"/></p>
+                    </form>
+                {% endif %}
+            {% else %}
+                <h1>You Need to Sign In first</h1>
+            {% endif %}
+        {% endblock%}
+    </div>
+    <div class="col-md-4"></div>
 {% endblock %}

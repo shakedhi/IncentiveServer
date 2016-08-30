@@ -5,6 +5,7 @@ import datetime
 import logging
 import threading
 import time
+from datetime import datetime as dt
 from logging.handlers import RotatingFileHandler
 from Config import Config as MConf
 from contextlib import closing
@@ -69,11 +70,6 @@ def sql_get(query, params):
     return rows
 
 
-def tmprint(txt):
-    local_time = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-    print "{0} - {1}".format(local_time, txt)
-
-
 def main():
     global adapter_pusher
     adapter_pusher = pusher.Pusher(
@@ -87,6 +83,7 @@ def main():
         try:
             print "Predicting..."
             prediction_loop()
+
         except:
             app_log.info("Prediction Loop failed.\n")
             app_log.info(sys.exc_info())
@@ -102,8 +99,6 @@ def prediction_loop():
             rows = sql_get("SELECT id,user_id,created_at,subjects "
                            "FROM stream WHERE intervention_id IS NULL AND local_time>=%s",
                            [local_time])
-            if len(rows) == 0:
-                continue
             for row in rows:
                 row_id = row[0]
                 collective_id = row[1]
@@ -119,29 +114,27 @@ def prediction_loop():
             continue
 
 
-def sleep_timeout(collective_id, reminder_time):
-    try:
-        conn = MySQLdb.connect(host=cnf['host'], user=cnf['user'], passwd=cnf['password'], db='lassi')
-        conn.autocommit(True)
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM incentive_timeout")
-        rows = cursor.fetchall()
-        timeout = rows[0][0]
-    except:
-        timeout = 10  # default timeout
-    app_log.info('timeout_for_collective(' + collective_id + ') for ' + str(timeout) + ' seconds\n')
-    curr_time = datetime.datetime.utcnow()
-    time_diff = (curr_time - reminder_time).total_seconds() / 60  # in minutes
-    time_diff = round(time_diff, 0)
-    if timeout > time_diff:
-        time.sleep((timeout - time_diff) * 60)  # in seconds
+def sleep_until(collective_id, reminder_time, using_timeout=False):
+    if using_timeout is True:
+        try:
+            conn = MySQLdb.connect(host=cnf['host'], user=cnf['user'], passwd=cnf['password'], db='lassi')
+            conn.autocommit(True)
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM incentive_timeout")
+            rows = cursor.fetchall()
+            timeout = rows[0][0]
+        except:
+            timeout = 10  # default timeout
 
+        time_diff = (dt.utcnow() - reminder_time).total_seconds() / 60  # in minutes
+        wait_time = (timeout - int(round(time_diff))) * 60  # in seconds
+    else:
+        curr_timestamp = (dt.utcnow() - dt.fromtimestamp(0)).total_seconds()
+        incentive_timestamp = (reminder_time - dt.fromtimestamp(0)).total_seconds()
+        wait_time = incentive_timestamp - curr_timestamp
+        print "%s\n%s\n%s\n" % (curr_timestamp, incentive_timestamp, wait_time)
+        wait_time = int(round(wait_time))
 
-def sleep_until(collective_id, reminder_time):
-    curr_timestamp = time.time()
-    incentive_timestamp = (reminder_time - datetime.datetime.fromtimestamp(0)).total_seconds()
-    wait_time = incentive_timestamp - curr_timestamp
-    wait_time = round(wait_time, 0)
     if wait_time > 0:
         app_log.info('timeout_for_collective(' + collective_id + ') for ' + str(wait_time) + ' seconds\n')
         time.sleep(wait_time)
@@ -149,7 +142,7 @@ def sleep_until(collective_id, reminder_time):
 
 def send_intervention_for_collective(collective_id, intervention):
     payload = {
-        "project": "smartcom",
+        "project": "SmartSociety",
         "collective_id": collective_id,
         "intervention_type": "reminder",
         "intervention_text": intervention,
@@ -158,20 +151,16 @@ def send_intervention_for_collective(collective_id, intervention):
     adapter_pusher.trigger('adapter', 'intervention', payload)
     app_log.info('send_intervention_for_collective(' + collective_id + '):' + str(payload) + '\n')
 
-    intervention_id = 1  # TODO: fix hard coded intervention
-    app_log.info('SUCCESS send_intervention_for_collective(' + collective_id + '):' + intervention)
-    return intervention_id
-
 
 def intervene(row_id, collective_id, reminder_time, intervention):
     try:
         # sleep until it's time
         sleep_until(collective_id, reminder_time)
+        # send intervention
+        send_intervention_for_collective(collective_id, intervention)
 
-        intervention_id = send_intervention_for_collective(collective_id, intervention)
-
-        app_log.info("Collective:%s, intervention_id:%s" % (collective_id, intervention_id))
-        sql("UPDATE stream SET intervention_id=%s WHERE id=%s", (intervention_id, row_id))
+        app_log.info("Collective:%s, intervention:%s" % (collective_id, intervention))
+        sql("UPDATE stream SET intervention_id=%s WHERE id=%s", ("Sent", row_id))
         app_log.info("done execute\n")
     except:
         app_log.info("Error: ")

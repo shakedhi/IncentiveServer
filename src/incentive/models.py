@@ -93,3 +93,19 @@ class User(models.Model):
 
     class Meta:
         ordering = ('user_id', 'created_at',)
+
+
+class Collective(models.Model):
+    collective_id = models.CharField(max_length=1000, null=False)
+    incentive_text = models.CharField(max_length=1000, null=False)
+    incentive_timestamp = models.BigIntegerField(null=False)
+
+    class Meta:
+        ordering = ('collective_id', 'incentive_text', 'incentive_timestamp')
+
+
+class Invalidate(models.Model):
+    peer_ids = models.CharField(max_length=1000, null=False)
+
+    class Meta:
+        ordering = ('peer_ids',)

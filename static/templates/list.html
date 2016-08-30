@@ -7,10 +7,10 @@
         <h1>Upload your Data Set</h1>
       </div>
     </div>
-
 {% endblock %}
+
 {% block content %}
-		<!-- List of uploaded documents -->
+    <!-- List of uploaded documents -->
     {% block checkuser %}
         {% if user.is_authenticated %}
 			{% if documents %}
@@ -24,7 +24,7 @@
 				<p>No data set was uploaded yet.</p>
 			{% endif %}
 			<hr>
-		<!-- Upload form. Note enctype attribute! -->
+		    <!-- Upload form. Note enctype attribute! -->
 			<form action="{% url "data_set" %}" method="post" enctype="multipart/form-data">
 				{% csrf_token %}
 				<p>{{ form.non_field_errors }}</p>
@@ -33,9 +33,9 @@
 					{{ form.docfile.errors }}
 					{{ form.docfile }}
 				</p>
-				<p><input type="submit" value="Upload" /></p>
+				<p><input type="submit" value="Upload"/></p>
 			</form>
-         {% else %}
+        {% else %}
             <h1>You Need to Sign In first</h1>
         {% endif %}
     {% endblock%}

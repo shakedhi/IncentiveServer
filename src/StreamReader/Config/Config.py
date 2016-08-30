@@ -5,7 +5,7 @@ class Config(object):
     conf = dict()
 
     # conf['clfFile'] ='/home/ise/Model/dismodel.pkl'
-    conf['clfFile'] = '/home/shakedhi/Documents/Lassi/src/Algorithem/Model/dismodel.pkl'
+    conf['clfFile'] = '/home/shakedhi/Documents/Model/dismodel.pkl'
 
     # conf['strmLog'] = '/home/ise/Logs/streamer.log'
     conf['strmLog'] = '/home/shakedhi/Documents/Logs/streamer.log'
@@ -26,4 +26,4 @@ class Config(object):
 
     conf['db'] = 'streamer'
 
-    conf['duration_dist'] = '/home/ise/Lassi/src/Predictor/session_duration_for_distribution.csv'
+    conf['duration_dist'] = '../Predictor/session_duration_for_distribution.csv'

@@ -31,3 +31,19 @@ class TimeoutForm(forms.ModelForm):
         model = Timeout
         fields = ('timeout',)
 
+
+class CollectiveForm(forms.Form):
+    collective_id = forms.CharField(required=True)
+    incentive_text = forms.CharField(required=True)
+    incentive_timestamp = forms.IntegerField(required=True)
+
+    class Meta:
+        ordering = ('collective_id', 'incentive_text', 'incentive_timestamp')
+
+
+class InvalidateForm(forms.ModelForm):
+    peer_ids = forms.CharField(required=True)
+
+    class Meta:
+        model = Timeout
+        fields = ('peer_ids',)

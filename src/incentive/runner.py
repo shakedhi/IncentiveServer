@@ -1,21 +1,37 @@
 from django.http import HttpResponse
 from rest_framework.renderers import JSONRenderer
 from django.views.decorators.csrf import csrf_exempt
+from json import JSONEncoder
+from Predictor import Predictor
 import json
 import numpy as np
-import numpy
 import sys
 from sklearn.externals import joblib
 import logging
 import requests
 import datetime
-from json import JSONEncoder
+import pusher
+import time
+
 
 __author__ = 'dor'
 
 log = logging.getLogger(__name__)
 
 Alg = None
+Pusher = None
+
+
+def get_pusher():
+    global Pusher
+    if Pusher is None:
+        Pusher = pusher.Pusher(
+            app_id='231267',
+            key='bf548749c8760edbe3b6',
+            secret='6545a7b9465cde9fab73',
+            ssl=True
+        )
+    return Pusher
 
 
 @csrf_exempt
@@ -45,6 +61,16 @@ def get_the_best_for_user(request, user_id, created_at):
                 "message": "Staying"
             })
         return JSONResponse(json_incentive)
+    except:
+        return JSONResponse('{"Alg":"Error"}')
+
+
+@csrf_exempt
+def send_incentive_to_collective(request, collective_id, created_at):
+    global Pusher
+    try:
+        # Predictor.send_intervention_for_collective(collective_id, )
+        return JSONResponse('{"Alg":"Success"}')
     except:
         return JSONResponse('{"Alg":"Error"}')
 
@@ -87,10 +113,9 @@ def send_intervention_for_user(user_id):
             "take_action": "after_next_classification"
         }
 
-        request = c.post(url, data=payload)
-        # print 'send_intervention_for_user(' + userId + '):' + request.content
+        response = c.post(url, data=payload)
         try:
-            content = json.loads(request.content)
+            content = json.loads(response.content)
             intervention_id = content['id']
             print 'SUCCESS send_intervention_for_user(' + user_id + '):' + intervention_id
             return intervention_id
@@ -101,10 +126,10 @@ def send_intervention_for_user(user_id):
 
 class dis_predictor:
     def median(self, lst):
-        return numpy.median(numpy.array(lst))
+        return np.median(np.array(lst))
 
     def avg(self, lst):
-        return numpy.average(numpy.array(lst))
+        return np.average(np.array(lst))
 
     def __init__(self):
         root = logging.getLogger()
@@ -233,7 +258,7 @@ class dis_predictor:
         s_sessionTasks = self.user_current_session_stats[user_id][ctaskidx]
         s_sessionTime = (created_at - self.user_current_session_stats[user_id][csstartidx]).total_seconds()
 
-        if (self.user_past_session_stats[user_id][pscountidx] == 0):  # no past sessions
+        if self.user_past_session_stats[user_id][pscountidx] == 0:  # no past sessions
             u_bHavePastSession = 0
             u_avgSessionTasks = 0
             u_medianSessionTasks = 0
