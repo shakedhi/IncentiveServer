@@ -3,8 +3,8 @@ from django.conf.urls.static import static
 from django.contrib.auth.models import User
 from rest_framework import serializers, viewsets, routers
 from django.conf.urls import url
-from incentive import views
-from incentive.views import IncentiveViewSet
+from incentive import views, runner
+from incentive.views import IncentiveViewSet, UserViewSet
 from rest_framework import renderers
 from django.conf.urls import include
 from django.contrib import admin
@@ -21,12 +21,6 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = User
         fields = ('url', 'username', 'email', 'is_staff')
-
-
-# ViewSets define the view behavior.
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
 
 
 incentive_list = IncentiveViewSet.as_view({
@@ -62,20 +56,20 @@ urlpatterns = [
     url(r'^about/$', views.about),
     url(r'^test/$', views.incentive_test),
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
-    url(r'^$', 'incentive.views.home', name='home'),
+    url(r'^$', views.home, name='home'),
     url(r'^admin/', include(admin.site.urls)),
-    url(r'^add/', 'incentive.views.add_incentive', name='add'),
+    url(r'^add/', views.add_incentive, name='add'),
     url(r'^incentives/$', views.incentive_list, name='incentive_filter'),
     url(r'^login/$', views.login, name='login'),
     url(r'^wiki/$', views.wiki, name='wiki'),
     url(r'^aboutus/', views.aboutus, name='aboutus'),
-    url(r'^list/$', 'incentive.views.data_set', name='data_set'),
-    url(r'^profile/', 'incentive.views.user_profile', name='profile_page'),
-    url(r'^startAlg/', 'incentive.runner.start_alg', name='startAlg'),
-    url(r'^predicting/', 'incentive.runner.get_the_best_for_user', name='predicting'),
-    url(r'^timeout/$', 'incentive.views.change_timeout', name='changeTimeout'),
+    url(r'^list/$', views.data_set, name='data_set'),
+    url(r'^profile/', views.user_profile, name='profile_page'),
+    url(r'^startAlg/', runner.start_alg, name='start_alg'),
+    url(r'^predicting/', runner.get_the_best_for_user, name='predicting'),
+    url(r'^timeout/$', views.change_timeout, name='change_timeout'),
 
-    url(r'^getIncUser/$', 'incentive.views.get_user_id', name='getIncUser'),
+    url(r'^getIncUser/$', views.get_user_id, name='getIncUser'),
     url(r'^dash/pages/dash.html', views.dash, name='dash'),
     url(r'^dashStream/$', views.dash_stream, name='dashStream'),
 
@@ -84,9 +78,9 @@ urlpatterns = [
     url(r'^ask_gt_id/$', views.ask_gt_id, name='ask_gt_id'),
     url(r'^disratio/$', views.give_ratio, name='disratio'),
 
-    url(r'^sendToCollective/$', 'incentive.views.send_incentive_collective', name='send_collective'),
-    url(r'^invalidate/(?P<cid>[1-9][0-9]*)/$', 'incentive.views.invalidate_from_collective', name='invalidate'),
-
+    url(r'^collectiveReminder/$', views.send_collective_reminder, name='reminder'),
+    url(r'^invalidate/(?P<cid>[1-9][0-9]*)/$', views.invalidate_from_collective, name='invalidate'),
+    url(r'^invalidate/$', views.invalidate_no_collective, name='invalidate_no_collective'),
 ]
 # url(r'^docs/', include('rest_framework_swagger.urls')),
 

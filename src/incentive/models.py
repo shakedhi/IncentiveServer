@@ -72,7 +72,8 @@ class Document(models.Model):
 class Timeout(models.Model):
     timeout = models.IntegerField(null=False)
 
-    def current_timeout(self):
+    @staticmethod
+    def current_timeout():
         return Timeout.objects.all().first()
 
     def save(self, *args, **kwargs):

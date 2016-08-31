@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block jumbotron %}
+    <!-- Main jumbotron for a primary marketing message or call to action -->
+    <div class="jumbotron" xmlns="http://www.w3.org/1999/html">
+        <div class="container">
+            <h1>Invalidate Peers from Collective</h1>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="col-sm-1"></div>
+    <div class="col-sm-4">
+        <form class="form-horizontal" method="post" action="{% url "invalidate_no_collective" %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="collective" style="font-size: 18px; margin-bottom: 10px;">Enter Collective ID:</label>
+                <input id="collective" name="collective" class="form-control" type="number" required>
+            </div>
+            <div class="form-group">
+                  <button type="submit" class="btn btn-success btn-block"/>Continue</button>
+            </div>
+        </form>
+    </div>
+    <div class="col-sm-1">
+        <br>
+        <h2 style="text-align: center;">&nbsp;OR</h2>
+    </div>
+    <div class="col-sm-4">
+        <br><br>
+        <h4>Use the postfix: /invalidate/<b>&lt;Collective_ID&gt;</b>/</h4>
+    </div>
+{% endblock %}

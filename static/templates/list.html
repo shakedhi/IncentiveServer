@@ -1,8 +1,9 @@
 {% extends 'base.html' %}
+{% load bootstrap %}
 
 {% block jumbotron %}
     <!-- Main jumbotron for a primary marketing message or call to action -->
-    <div class="jumbotron">
+    <div class="jumbotron" xmlns="http://www.w3.org/1999/html">
       <div class="container">
         <h1>Upload your Data Set</h1>
       </div>
@@ -33,7 +34,8 @@
 					{{ form.docfile.errors }}
 					{{ form.docfile }}
 				</p>
-				<p><input type="submit" value="Upload"/></p>
+                <br>
+				<button type="submit" class="btn btn-primary" style="width: 180px;">Upload</button>
 			</form>
         {% else %}
             <h1>You Need to Sign In first</h1>

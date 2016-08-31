@@ -3,9 +3,8 @@
 {% load staticfiles %}
 {% load rest_framework %}
 
-    {% block body %}
+{% block body %}
     <body class="container">
-
         <div class="container-fluid" style="margin-top: 30px">
             <div class="row-fluid">
                 <div class="well" style="width: 320px; margin-left: auto; margin-right: auto">
@@ -23,11 +22,9 @@
                                     class="clearfix control-group {% if form.username.errors %}error{% endif %}">
                                     <div class="form-group">
                                         <label for="id_username">Username:</label>
-                                        <input type="text" name="username" maxlength="100"
-                                            autocapitalize="off"
-                                            autocorrect="off" class="form-control textinput textInput"
-                                            id="id_username" required
-                                            {% if form.username.value %}value="{{ form.username.value }}"{% endif %}>
+                                        <input type="text" name="username" maxlength="100" autocapitalize="off"
+                                               autocorrect="off" class="form-control textinput textInput" id="id_username" required
+                                               {% if form.username.value %}value="{{ form.username.value }}"{% endif %}>
                                         {% if form.username.errors %}
                                             <p class="text-error">
                                                 {{ form.username.errors|striptags }}
@@ -65,4 +62,4 @@
             </div><!-- /.row-fluid -->
         </div><!-- /.container-fluid -->
     </body>
-    {% endblock %}
+{% endblock %}

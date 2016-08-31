@@ -3,16 +3,15 @@ from django.core.urlresolvers import reverse
 from django.contrib import messages
 from django.contrib.auth.models import User, Group
 from django.http.response import HttpResponseBadRequest
-from django.http import HttpResponse, StreamingHttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, StreamingHttpResponse, HttpResponseRedirect, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import condition
-from django.shortcuts import render_to_response
+from django.shortcuts import render_to_response, redirect
 from django.template import RequestContext
 from rest_framework import viewsets, renderers, permissions
 from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
 from rest_framework.decorators import detail_route
-from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework.authtoken.models import Token
@@ -20,7 +19,7 @@ from models import Incentive, Tag, Document
 from serializers import IncentiveSerializer, UserSerializer
 from permissions import IsOwnerOrReadOnly
 from forms import DocumentForm, IncentiveForm, UserForm, TimeoutForm, CollectiveForm, InvalidateForm
-from json import JSONEncoder, JSONDecoder
+from json import JSONEncoder
 from contextlib import closing
 from runner import get_the_best_for_user
 from Config import Config as MConf
@@ -31,7 +30,6 @@ import datetime
 import sys
 import runner
 import pusher
-import time
 
 cnf = MConf.Config().conf
 Pusher = None
@@ -103,6 +101,7 @@ class UserViewSet(viewsets.ModelViewSet):
     """
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
 
 class IncentiveViewSet(viewsets.ModelViewSet):
@@ -121,20 +120,8 @@ class IncentiveViewSet(viewsets.ModelViewSet):
         incentive = self.get_object()
         return Response(incentive.highlighted)
 
-    # def perform_create(self, serializer):
-    #         serializer.save()
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
-
-
-class JSONResponse(HttpResponse):
-    """
-    An HttpResponse that renders its content into JSON.
-    """
-    def __init__(self, data, **kwargs):
-        content = JSONRenderer().render(data)
-        kwargs['content_type'] = 'application/json'
-        super(JSONResponse, self).__init__(content, **kwargs)
 
 
 # class IncentiveHighlight(generics.GenericAPIView):
@@ -144,24 +131,6 @@ class JSONResponse(HttpResponse):
 #     def get(self, request, *args, **kwargs):
 #         incentive = self.get_object()
 #         return Response(incentive.highlighted)
-
-# class IncentiveView(APIView):
-#     """
-#     View to list all users in the system.
-#
-#     * Requires token authentication.
-#     * Only admin users are able to access this view.
-#     """
-#     queryset = Incentive.objects.all()
-#     serializer_class = IncentiveSerializer
-#     permission_classes = (permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly,)
-#
-#     def get(self, request, format=None):
-#         """
-#         Return a list of all users.
-#         """
-#         usernames = [incentive.status for incentive in Incentive.objects.all()]
-#         return Response(usernames)
 
 
 @csrf_exempt
@@ -176,8 +145,8 @@ def login(request):
             user = None
         if user is not None and user.check_password(password):
             token = Token.objects.get_or_create(user=user)
-            return JSONResponse("{'Token':'" + token[0].key + "'}")
-    return JSONResponse("{'Token':'0'}")
+            return JsonResponse('{"Token":"' + token[0].key + '"}', safe=False)
+    return JsonResponse('{"Token":"0"}', safe=False)
 
 
 @csrf_exempt
@@ -209,17 +178,17 @@ def incentive_list(request):
                 if key == 'schemeID':
                     incentive = Incentive.objects.filter(schemeID=tmp[key][0])
         if incentive is None:
-            return JSONResponse("{err:Wrong Argument}", status=404)
+            return JsonResponse("{err:Wrong Argument}", status=404, safe=False)
         serializer = IncentiveSerializer(incentive, many=True)
-        return JSONResponse(serializer.data)
+        return JsonResponse(serializer.data, safe=False)
 
     elif request.method == 'POST':
         data = JSONParser().parse(request)
         serializer = IncentiveSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
-            return JSONResponse(serializer.data, status=201)
-        return JSONResponse(serializer.errors, status=400)
+            return JsonResponse(serializer.data, status=201, safe=False)
+        return JsonResponse(serializer.errors, status=400, safe=False)
 
 
 @csrf_exempt
@@ -234,15 +203,15 @@ def incentive_detail(request, pk):
 
     if request.method == 'GET':
         serializer = IncentiveSerializer(incentive)
-        return JSONResponse(serializer.data)
+        return JsonResponse(serializer.data, safe=False)
 
     elif request.method == 'PUT':
         data = JSONParser().parse(request)
         serializer = IncentiveSerializer(incentive, data=data)
         if serializer.is_valid():
             serializer.save()
-            return JSONResponse(serializer.data)
-        return JSONResponse(serializer.errors, status=400)
+            return JsonResponse(serializer.data, safe=False)
+        return JsonResponse(serializer.errors, status=400, safe=False)
 
     elif request.method == 'DELETE':
         incentive.delete()
@@ -298,7 +267,6 @@ def data_set(request):
         if form.is_valid():
             newdoc = Document(docfile=request.FILES['docfile'], owner=request.user)
             newdoc.save()
-
             # Redirect to the document list after POST
             return HttpResponseRedirect(reverse('incentive.views.data_set'))
     else:
@@ -308,13 +276,12 @@ def data_set(request):
     documents = None
     if request.user.is_active:
         documents = Document.objects.filter(owner=request.user)
-
     # Render list page with the documents and the form
     return render_to_response('list.html', locals(), context_instance=RequestContext(request))
 
 
 @csrf_exempt
-def send_incentive_collective(request):
+def send_collective_reminder(request):
     if request.method == 'POST':
         if request.META['CONTENT_TYPE'] == 'application/x-www-form-urlencoded':
             form = CollectiveForm(request.POST, request.FILES)
@@ -341,13 +308,13 @@ def send_incentive_collective(request):
                 form = CollectiveForm()
             elif request.META['CONTENT_TYPE'] == 'application/json':
                 messages.warning(request, 'You must fill the required fields.')
-            return render_to_response('sendCollective.html', locals(), context_instance=RequestContext(request))
+            return render_to_response('collectiveReminder.html', locals(), context_instance=RequestContext(request))
         elif request.META['CONTENT_TYPE'] == 'application/json':
             get_pusher().trigger('adapter', 'reminder', request.body)
-            return JSONResponse('{"reminder":"Success"}')
+            return JsonResponse('{"reminder":"Success"}', safe=False)
     else:
-        form = CollectiveForm(initial={'incentive_timestamp': int(round(time.time()))})
-        return render_to_response('sendCollective.html', locals(), context_instance=RequestContext(request))
+        form = CollectiveForm()
+        return render_to_response('collectiveReminder.html', locals(), context_instance=RequestContext(request))
 
 
 @csrf_exempt
@@ -381,10 +348,21 @@ def invalidate_from_collective(request, cid):
                 "peers": json.loads(request.body)
             }
             get_pusher().trigger('adapter', 'invalidate', invalidate)
-            return JSONResponse('{"invalidate":"Success"}')
+            return JsonResponse('{"invalidate":"Success"}', safe=False)
     else:
         form = InvalidateForm()
         return render_to_response('invalidate.html', locals(), context_instance=RequestContext(request))
+
+
+def invalidate_no_collective(request):
+    if request.method == 'POST':
+        cid = int(request.POST.get('collective', -1))
+        if cid <= 0:
+            messages.warning(request, 'You must enter a valid number (i.e. greater than 0).')
+        else:
+            a = str(cid) + '/'
+            return redirect(a)
+    return render_to_response('invalidateNoCollective.html', locals(), context_instance=RequestContext(request))
 
 
 @csrf_exempt
@@ -404,8 +382,6 @@ def change_timeout(request):
         save_it = form.save(commit=False)
         save_it.save()
         messages.success(request, 'The timeout has been updated!')
-    else:
-        messages.warning(request, 'An error occurred.')
     return render_to_response("timeout.html", locals(), context_instance=RequestContext(request))
 
 
@@ -443,10 +419,9 @@ def user_profile(request):
     if request.user.is_active:
         incentives = Incentive.objects.filter(owner=request.user)
         for incentive in incentives:
-            incentives_list.append(str(incentive.schemeID) + ":" + incentive.schemeName)
+            incentives_list.append([incentive.schemeID, incentive.schemeName])
         documents = Document.objects.filter(owner=request.user)
         # user = User.objects.get(username=request.user)
-
     return render_to_response('profilePage.html', locals(), context_instance=RequestContext(request))
 
 
@@ -594,9 +569,6 @@ def ask_gt_id(request):
 
 @csrf_exempt
 def give_ratio(request):
-    print "Give Ratio Requested"
-    ones = 0
-    zeros = 0
     l = 0  # "1.0"/"1.0"+"0.0"
     s = 0  # "0.0"/"1.0"+"0.0"
     try:
@@ -605,24 +577,14 @@ def give_ratio(request):
         cursor = conn.cursor()
 
         cursor.execute("SELECT count(*) AS count FROM stream WHERE algo_info = '1'")
-        rows = cursor.fetchall()
-        if len(rows) == 0:
-            return JSONResponse('{"DB":"Unable to read db"}')
-        for row in rows:
-            try:
-                ones = row[0]
-            except:
-                return JSONResponse('{"DB":"Unable to read db"}')
-
+        row_ones = cursor.fetchall()
         cursor.execute("SELECT count(*) AS count FROM stream WHERE algo_info = '0'")
-        rows = cursor.fetchall()
-        if len(rows) == 0:
-            return JSONResponse('{"DB":"Unable to read db"}')
-        for row in rows:
-            try:
-                zeros = row[0]
-            except:
-                return JSONResponse('{"DB":"Unable to read db"}')
+        row_zeros = cursor.fetchall()
+        try:
+            ones = row_ones[0][0]
+            zeros = row_zeros[0][0]
+        except:
+            return JsonResponse('{"DB":"Unable to read db"}', safe=False)
         if ones > 0 or zeros > 0:
             l = ones / (ones + zeros)
             s = zeros / (ones + zeros)
@@ -630,10 +592,9 @@ def give_ratio(request):
         ratio = list()
         ratio.append("{\"l\":" + str(l) + ",\"s\":" + str(s) + "}")
         json_incentive = json.dumps(ratio)
-        print json_incentive
-        return JSONResponse(json_incentive)
+        return JsonResponse(json_incentive, safe=False)
     except:
-        return JSONResponse('{"DB":"Error"}')
+        return JsonResponse('{"DB":"Error"}', safe=False)
 
 
 def sql(query, params):

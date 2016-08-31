@@ -5,7 +5,6 @@
 <html>
     <head>
         {% block head %}
-
             {% block meta %}
                 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
                 <meta name="robots" content="NONE,NOARCHIVE" />
@@ -27,12 +26,10 @@
 
     {% block body %}
     <body class="{% block bodyclass %}{% endblock %}">
-
         <div class="wrapper">
-
             {% block navbar %}
                 <div class="navbar navbar-static-top {% block bootstrap_navbar_variant %}navbar-inverse{% endblock %}">
-                    <div class="container">
+                    <div class="container-fluid">
                         <span>
                             {% block branding %}
                                 <a class='navbar-brand' rel="nofollow" href='http://www.django-rest-framework.org'>
@@ -68,7 +65,6 @@
 
             <!-- Content -->
             <div id="content">
-
                 {% if 'GET' in allowed_methods %}
                     <form id="get-form" class="pull-right">
                         <fieldset>

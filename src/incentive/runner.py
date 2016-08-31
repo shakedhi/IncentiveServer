@@ -1,8 +1,7 @@
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from rest_framework.renderers import JSONRenderer
 from django.views.decorators.csrf import csrf_exempt
 from json import JSONEncoder
-from Predictor import Predictor
 import json
 import numpy as np
 import sys
@@ -11,8 +10,6 @@ import logging
 import requests
 import datetime
 import pusher
-import time
-
 
 __author__ = 'dor'
 
@@ -39,9 +36,9 @@ def start_alg(request):
     try:
         global Alg
         Alg = dis_predictor()
-        return JSONResponse('{"Alg":"Success"}')
+        return JsonResponse('{"Alg":"Success"}', safe=False)
     except:
-        return JSONResponse('{"Alg":"Error"}')
+        return JsonResponse('{"Alg":"Error"}', safe=False)
 
 
 @csrf_exempt
@@ -60,19 +57,9 @@ def get_the_best_for_user(request, user_id, created_at):
                 "userID": str(user_id),
                 "message": "Staying"
             })
-        return JSONResponse(json_incentive)
+        return JsonResponse(json_incentive, safe=False)
     except:
-        return JSONResponse('{"Alg":"Error"}')
-
-
-@csrf_exempt
-def send_incentive_to_collective(request, collective_id, created_at):
-    global Pusher
-    try:
-        # Predictor.send_intervention_for_collective(collective_id, )
-        return JSONResponse('{"Alg":"Success"}')
-    except:
-        return JSONResponse('{"Alg":"Error"}')
+        return JsonResponse('{"Alg":"Error"}', safe=False)
 
 
 @csrf_exempt
@@ -83,20 +70,9 @@ def give_ratio(request):
         ratio = list()
         ratio.append("{\"l\":" + str(l) + ",\"s\":" + str(s) + "}")
         json_incentive = json.dumps(ratio)
-        return JSONResponse(json_incentive)
+        return JsonResponse(json_incentive, safe=False)
     except:
-        return JSONResponse('{"Alg":"Error"}')
-
-
-class JSONResponse(HttpResponse):
-    """
-    An HttpResponse that renders its content into JSON.
-    """
-
-    def __init__(self, data, **kwargs):
-        content = JSONRenderer().render(data)
-        kwargs['content_type'] = 'application/json'
-        super(JSONResponse, self).__init__(content, **kwargs)
+        return JsonResponse('{"Alg":"Error"}', safe=False)
 
 
 def send_intervention_for_user(user_id):

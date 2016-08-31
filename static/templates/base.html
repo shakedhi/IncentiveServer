@@ -31,33 +31,44 @@
 </head>
 <body>
 <nav class="navbar navbar-inverse navbar-fixed-top">
-    <div class="container">
+    <div class="container-fluid">
         <div class="navbar-header">
-            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar"
-                    aria-expanded="false" aria-controls="navbar">
-                <span class="sr-only">Toggle navigation</span>
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
             <a class="navbar-brand" href="{% url 'home' %}">Incentive Server</a>
         </div>
-        <div class="collapse navbar-collapse">
+        <div class="collapse navbar-collapse" id="myNavbar">
             <ul class="nav navbar-nav">
                 {% if user.is_authenticated %}
-                    <li><a href="{% url 'admin:index' %}">Admin</a></li>
-                    <li><a href="{% url 'data_set' %}">Upload DataSet</a></li>
+                    {% if user.is_staff %}
+                        <li><a href="{% url 'admin:index' %}">Admin</a></li>
+                    {% endif %}
                     <li><a href="{% url 'profile_page' %}">Profile</a></li>
                     <li class="dropdown">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Algorithm<span
-                                class="caret"></span></a>
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+                            Algorithm <span class="caret"></span>
+                        </a>
                         <ul class="dropdown-menu" role="menu">
-                            <li><a href="/startAlg">Start</a></li>
+                            <li><a href="{% url "start_alg" %}">Start</a></li>
                             <li><a href="#">Clear</a></li>
                             <li class="divider"></li>
-                            <li><a href="/disratio">Get ratio</a></li>
+                            <li><a href="{% url "disratio" %}">Get ratio</a></li>
                             <li class="divider"></li>
-                            <li><a href="/getIncUser">Get Incentive for Specific User</a></li>
+                            <li><a href="{% url "getIncUser" %}">Get Incentive for Specific User</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+                            SmartSociety <span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu" role="menu">
+                            <li><a href="{% url "reminder" %}">Collective reminder</a></li>
+                            <li><a href="{% url "invalidate_no_collective" %}">Invalidate</a></li>
+                            <li class="divider"></li>
+                            <li><a href="{% url 'change_timeout' %}">Change timeout</a></li>
                         </ul>
                     </li>
                 {% endif %}
@@ -76,7 +87,6 @@
         </div> <!--/.navbar-collapse -->
     </div>
 </nav>
-
 {% block jumbotron %}
 {% endblock %}
 

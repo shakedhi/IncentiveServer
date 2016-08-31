@@ -6,7 +6,7 @@
         <div class="container">
             {% if user.is_authenticated %}
                 <h1>Hi, {{request.user.first_name}} {{ request.user.last_name }} </h1>
-                <h2>this is your profile</h2>
+                <h2>This is your profile</h2>
             {% else %}
                 <h1>Your Profile</h1>
             {% endif %}
@@ -15,30 +15,46 @@
 {% endblock %}
 
 {% block content %}
-	<!-- List of uploaded documents -->
-    {% block checkuser %}
-        {% if user.is_authenticated %}
-            {% if incentives %}
-                <h3>Incentive:</h3>
-                <ul>
-                {% for incentive in incentives_list %}
-                    <li style="font-size: 16px">{{ incentive }}</li>
-                {% endfor %}
-                </ul>
-            {% endif %}
-            <hr>
-            <h3>Data Sets:</h3>
-            {% if documents %}
-                <ul>
-                {% for document in documents %}
-                    <li><a href="{{ document.docfile.url }}" style="color: #222222; font-size: 16px;">{{ document.docfile.name }}</a></li>
-                {% endfor %}
-                </ul>
+    <div class="col-md-4">
+        {% block checkuser %}
+            {% if user.is_authenticated %}
+                {% if incentives %}
+                    <h3>Incentives:</h3>
+                    <div class="table-responsive" style="margin-left: 5px;">
+                        <table class="table table-hover table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Scheme ID</th>
+                                    <th>Scheme Name</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for incentive in incentives_list %}
+                                    <tr>
+                                        <td>{{ incentive.0 }}</td>
+                                        <td>{{ incentive.1 }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+                <hr>
+                <h3>Data Sets:</h3>
+                {% if documents %}
+                    <ul>
+                    {% for document in documents %}
+                        <li><a href="{{ document.docfile.url }}" style="color: #222222; font-size: 16px;">{{ document.docfile.name }}</a></li>
+                    {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No data set was uploaded yet.</p>
+                {% endif %}
+                <br>
+                <button type="button" class="btn btn-primary" onclick="location.href='{% url "data_set" %}';">Upload Data Set</button>
             {% else %}
-                <p>No data set was uploaded yet.</p>
+                <h1>You Need to Sign In first</h1>
             {% endif %}
-        {% else %}
-            <h1>You Need to Sign In first</h1>
-        {% endif %}
-    {% endblock%}
+        {% endblock%}
+    </div>
 {% endblock %}

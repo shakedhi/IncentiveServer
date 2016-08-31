@@ -1,10 +1,11 @@
 {% extends 'base.html' %}
+{% load bootstrap %}
 
 {% block jumbotron %}
     <!-- Main jumbotron for a primary marketing message or call to action -->
     <div class="jumbotron">
       <div class="container">
-        <h1>Invalidate Peer from Collective</h1>
+        <h1>Invalidate Peers from Collective</h1>
       </div>
     </div>
 {% endblock %}
@@ -19,8 +20,10 @@
                 <form action="{% url "invalidate" cid %}" method="post">
                     {% csrf_token %}
                     {{ form.non_field_errors }}
-                    {{ form.as_p }}
-                    <p><input type="submit" value="invalidate"/></p>
+                    {{ form|bootstrap }}
+                    <div class="form-group">
+                      <button type="submit" class="btn btn-success btn-block">Invalidate</button>
+                    </div>
                 </form>
             {% else %}
                 <h1>You Need to Sign In first</h1>

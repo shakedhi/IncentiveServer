@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load bootstrap %}
 
 {% block jumbotron %}
     <!-- Main jumbotron for a primary marketing message or call to action -->
@@ -14,10 +15,11 @@
     <div class="col-md-4">
         {% block checkuser %}
             {% if user.is_authenticated %}
-                <h1>Add Incentive:</h1>
+                <h3>Add New Incentive:</h3>
+                <br>
                 <form method='POST' action=''>
                     {% csrf_token %}
-                    {{form.as_p}}
+                    {{form|bootstrap}}
                     <input type="submit" class="btn btn-success btn-block"/>
                 </form>
             {% else %}
