@@ -123,21 +123,30 @@ def sleep_until(collective_id, reminder_time, using_timeout=False):
             cursor.execute("SELECT * FROM incentive_timeout")
             rows = cursor.fetchall()
             timeout = rows[0][0]
+            conn.close()
         except:
             timeout = 10  # default timeout
-
         time_diff = (dt.utcnow() - reminder_time).total_seconds() / 60  # in minutes
         wait_time = (timeout - int(round(time_diff))) * 60  # in seconds
     else:
         curr_timestamp = (dt.utcnow() - dt.fromtimestamp(0)).total_seconds()
         incentive_timestamp = (reminder_time - dt.fromtimestamp(0)).total_seconds()
         wait_time = incentive_timestamp - curr_timestamp
-        print "%s\n%s\n%s\n" % (curr_timestamp, incentive_timestamp, wait_time)
         wait_time = int(round(wait_time))
 
     if wait_time > 0:
         app_log.info('timeout_for_collective(' + collective_id + ') for ' + str(wait_time) + ' seconds\n')
         time.sleep(wait_time)
+
+
+def get_invalidated_peers(collective_id):
+    try:
+        rows = sql_get("SELECT peer_id FROM invalidations WHERE collective_id=%s", [collective_id])
+        rows = [x[0] for x in rows]
+        sql("DELETE FROM invalidations WHERE collective_id=%s", [collective_id])
+        return rows
+    except:
+        return []
 
 
 def send_intervention_for_collective(collective_id, intervention):
@@ -146,6 +155,7 @@ def send_intervention_for_collective(collective_id, intervention):
         "collective_id": collective_id,
         "intervention_type": "reminder",
         "intervention_text": intervention,
+        "invalidated": get_invalidated_peers(collective_id)
     }
 
     adapter_pusher.trigger('adapter', 'intervention', payload)

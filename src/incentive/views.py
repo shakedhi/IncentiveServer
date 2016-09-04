@@ -9,7 +9,6 @@ from django.views.decorators.http import condition
 from django.shortcuts import render_to_response, redirect
 from django.template import RequestContext
 from rest_framework import viewsets, renderers, permissions
-from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
 from rest_framework.decorators import detail_route
 from rest_framework.response import Response
@@ -25,10 +24,10 @@ from runner import get_the_best_for_user
 from Config import Config as MConf
 import urllib2
 import json
+import yaml
 import MySQLdb
 import datetime
 import sys
-import runner
 import pusher
 
 cnf = MConf.Config().conf
@@ -280,6 +279,20 @@ def data_set(request):
     return render_to_response('list.html', locals(), context_instance=RequestContext(request))
 
 
+def parse_reminder_request(collective, location, text, time):
+    reminder = {
+        "project": "SmartSociety",
+        "user_id": collective,
+        "geo": {
+            "city_name": location['city_name'],
+            "country_name": location['country_name']
+        },
+        "subjects": text,
+        "created_at": datetime.datetime.fromtimestamp(int(time)/1000).strftime("%Y-%m-%dT%H:%M:%S")
+    }
+    get_pusher().trigger('ouroboros', 'classification', reminder)
+
+
 @csrf_exempt
 def send_collective_reminder(request):
     if request.method == 'POST':
@@ -287,41 +300,53 @@ def send_collective_reminder(request):
             form = CollectiveForm(request.POST, request.FILES)
             if form.is_valid():
                 collective_id = str(form.data[u'collective_id'])
+                location = {
+                    "city_name": "Vienna",
+                    "country_name": "Austria"
+                }  # TODO: fix location
                 inc_text = str(form.data[u'incentive_text'])
                 inc_time = str(int(form.data[u'incentive_timestamp']) * 1000)
-                reminder = {
-                    "incentive_type": "reminder",
-                    "incentive_text": inc_text,
-                    "incentive_timestamp": inc_time,
-                    "location": {
-                        "city_name": "Hadera",  # TODO: fix location
-                        "country_name": "Israel"
-                    },
-                    "recipient": {
-                        "type": "collective",
-                        "id": collective_id
-                    }
-                }
-                print reminder
-                get_pusher().trigger('adapter', 'reminder', reminder)
+                parse_reminder_request(collective_id, location, inc_text, inc_time)
+
                 messages.success(request, 'Reminder request was sent successfully.')
                 form = CollectiveForm()
-            elif request.META['CONTENT_TYPE'] == 'application/json':
+            else:
                 messages.warning(request, 'You must fill the required fields.')
             return render_to_response('collectiveReminder.html', locals(), context_instance=RequestContext(request))
         elif request.META['CONTENT_TYPE'] == 'application/json':
-            get_pusher().trigger('adapter', 'reminder', request.body)
+            r = yaml.safe_load(str(request.body))
+            location = {
+                "city_name": "Vienna",
+                "country_name": "Austria"
+            }  # TODO: fix location
+            parse_reminder_request(r['recipient']['id'], location, r['incentive_text'], r['incentive_timestamp'])
             return JsonResponse('{"reminder":"Success"}', safe=False)
     else:
         form = CollectiveForm()
         return render_to_response('collectiveReminder.html', locals(), context_instance=RequestContext(request))
 
 
+def invalidate_sql(collective, peers):
+    conn = MySQLdb.connect(host=cnf['host'], user=cnf['user'], passwd=cnf['password'], db=cnf['db'])
+    try:
+        cursor = conn.cursor()
+        for peer in peers:
+            try:
+                cursor.execute("INSERT INTO invalidations (collective_id, peer_id) VALUES (%s, %s)",
+                               (collective, peer['id']))
+            except:
+                continue  # already invalidated
+        conn.commit()
+    except MySQLdb.Error:
+        conn.rollback()
+    conn.close()
+
+
 @csrf_exempt
 def invalidate_from_collective(request, cid):
     if request.method == 'POST':
         if request.META['CONTENT_TYPE'] == 'application/x-www-form-urlencoded':
-            form = InvalidateForm(request.POST, request.FILES)
+            form = InvalidateForm(request.POST)
             if form.is_valid():
                 peer_ids = str(form.data[u'peer_ids']).split(';')
                 inv_peers = []
@@ -329,25 +354,17 @@ def invalidate_from_collective(request, cid):
                     pid = peer.strip()
                     if pid is not '':
                         inv_peers.append({"type": "peer", "id": pid})
-                invalidate = {
-                    "collective": cid,
-                    "peers": inv_peers
-                }
-                if not inv_peers:
-                    messages.warning(request, 'You must fill field with non-whitespace values.')
-                else:
-                    get_pusher().trigger('adapter', 'invalidate', invalidate)
+                if inv_peers:
+                    invalidate_sql(cid, inv_peers)
                     messages.success(request, 'Peers were invalidated successfully.')
                     form = InvalidateForm()
+                else:
+                    messages.warning(request, 'You must fill field with non-whitespace values.')
             else:
                 messages.warning(request, 'You must fill the required fields.')
             return render_to_response('invalidate.html', locals(), context_instance=RequestContext(request))
         elif request.META['CONTENT_TYPE'] == 'application/json':
-            invalidate = {
-                "collective": cid,
-                "peers": json.loads(request.body)
-            }
-            get_pusher().trigger('adapter', 'invalidate', invalidate)
+            invalidate_sql(cid, yaml.safe_load(str(request.body)))
             return JsonResponse('{"invalidate":"Success"}', safe=False)
     else:
         form = InvalidateForm()
@@ -374,6 +391,7 @@ def change_timeout(request):
         cursor.execute('SELECT * FROM incentive_timeout')
         rows = cursor.fetchall()
         initial_value = rows[0][0]
+        conn.close()
     except:
         initial_value = 10
 
