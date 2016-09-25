@@ -35,7 +35,7 @@ class Incentive(models.Model):
     groupIncentive = models.BooleanField(default=False)
     text = models.TextField()
     tags = models.ManyToManyField(Tag, null=True, blank=True)
-    # image =models.ImageField()
+    # image = models.ImageField()
     condition = models.TextField()
 
     # tags = models.ManyToManyField(Tag, null=True, blank=True,related_name="tags")
@@ -54,10 +54,6 @@ class Incentive(models.Model):
         Use the `pygments` library to create a highlighted HTML
         representation of the code snippet.
         """
-        # lexer = get_lexer_by_name(self.language)
-        # options = self.schemeName and {'title': self.schemeName} or {}
-        # formatter = HtmlFormatter(text=self.text, full=True, **options)
-        # self.highlighted = highlight(self.schemeName, lexer, formatter)
         super(Incentive, self).save(*args, **kwargs)
 
     def __unicode__(self):

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import sys
 import time
 import yaml
@@ -24,8 +22,8 @@ root.addHandler(ch)
 
 pusher = None
 
-logFile = cnf['strmLog']
-my_handler = RotatingFileHandler(logFile, mode='a', maxBytes=1 * 1024 * 1024, backupCount=50, encoding=None, delay=0)
+log_file = cnf['strmLog']
+my_handler = RotatingFileHandler(log_file, mode='a', maxBytes=1 * 1024 * 1024, backupCount=50, encoding=None, delay=0)
 my_handler.setFormatter(log_formatter)
 my_handler.setLevel(logging.INFO)
 
@@ -34,19 +32,26 @@ app_log.setLevel(logging.INFO)
 app_log.addHandler(my_handler)
 
 
-def sql(user_id, city_name, country_name, project, subjects, created_at):
+def sql(user_id, city_name, country_name, project, data, created_at):
+    """
+    insert stream event data to the database
+    :param user_id: the user id
+    :param city_name: the city name
+    :param country_name: the country name
+    :param project: the project name
+    :param data: the additional data
+    :param created_at: the time which the event was created remotely
+    """
     local_time = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-    # connect
     conn = MySQLdb.connect(host=cnf['host'], user=cnf['user'], passwd=cnf['password'], db=cnf['db'])
-
     cursor = conn.cursor()
     try:
         datet = parse(created_at)
         create_time = datetime.datetime(datet.year, datet.month, datet.day, datet.hour, datet.minute, datet.second)
         cursor.execute(
-            "INSERT INTO stream (user_id,project,subjects,created_at,country_name,city_name,local_time) "
+            "INSERT INTO stream (user_id,project,data,created_at,country_name,city_name,local_time) "
             "VALUES (%s,%s,%s,%s,%s,%s,%s)",
-            (user_id, project, subjects, create_time, country_name, city_name, local_time))
+            (user_id, project, data, create_time, country_name, city_name, local_time))
         conn.commit()
     except MySQLdb.Error as e:
         app_log.info(e)
@@ -54,17 +59,24 @@ def sql(user_id, city_name, country_name, project, subjects, created_at):
     conn.close()
 
 
-def channel_callback(data):
+def classification_callback(data):
+    """
+    invoked when a classification event was pushed
+    :param data: the data recieved in the classification event
+    """
     x = yaml.load(str(data))
-
-    if x['project'] == "SmartSociety":
+    if x['project'] == "AskSmartSociety":
         app_log.info("User:{0} Record added.\n".format(x['user_id']))
-        sql(x['user_id'], x['geo']['city_name'], x['geo']['country_name'], x['project'], x['subjects'], x['created_at'])
+        sql(x['user_id'], x['geo']['city_name'], x['geo']['country_name'], x['project'], x['data'], x['created_at'])
 
 
 def connect_handler(data):
+    """
+    invoked when pusher is connected
+    :param data: the data recieved in the connection event
+    """
     channel = pusher.subscribe("ouroboros")
-    channel.bind('classification', channel_callback)
+    channel.bind('classification', classification_callback)
 
 
 if __name__ == "__main__":

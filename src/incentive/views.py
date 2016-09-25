@@ -1,7 +1,7 @@
 from __future__ import division
 from django.core.urlresolvers import reverse
 from django.contrib import messages
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import User
 from django.http.response import HttpResponseBadRequest
 from django.http import HttpResponse, StreamingHttpResponse, HttpResponseRedirect, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -20,7 +20,6 @@ from permissions import IsOwnerOrReadOnly
 from forms import DocumentForm, IncentiveForm, UserForm, TimeoutForm, CollectiveForm, InvalidateForm
 from json import JSONEncoder
 from contextlib import closing
-from runner import get_the_best_for_user
 from Config import Config as MConf
 import urllib2
 import json
@@ -35,6 +34,9 @@ Pusher = None
 
 
 def get_pusher():
+    """
+    returns a singleton of the pusher
+    """
     global Pusher
     if Pusher is None:
         Pusher = pusher.Pusher(
@@ -48,6 +50,9 @@ def get_pusher():
 
 @csrf_exempt
 def dash_stream(request):
+    """
+    returns the stream's records that was created after a given time
+    """
     conn = MySQLdb.connect(host=cnf['host'], user=cnf['user'], passwd=cnf['password'], db=cnf['db'])
     datetime_o = str(request.REQUEST.get(u'date', 0))
     cursor = conn.cursor()
@@ -86,6 +91,9 @@ def aboutus(request):
 
 
 def add_incentive(request):
+    """
+    adding an incentive
+    """
     form = IncentiveForm(request.POST or None)
     if form.is_valid():
         save_it = form.save(commit=False)
@@ -123,17 +131,11 @@ class IncentiveViewSet(viewsets.ModelViewSet):
         serializer.save(owner=self.request.user)
 
 
-# class IncentiveHighlight(generics.GenericAPIView):
-#     queryset = Incentive.objects.all()
-#     renderer_classes = (renderers.StaticHTMLRenderer,)
-#
-#     def get(self, request, *args, **kwargs):
-#         incentive = self.get_object()
-#         return Response(incentive.highlighted)
-
-
 @csrf_exempt
 def login(request):
+    """
+    returns a csrf token for the user logging in, or 0 otherwise
+    """
     if request.method == 'POST':
         data = JSONParser().parse(request)
         username = data[u'username']
@@ -260,7 +262,9 @@ def incentive_test(request):
 
 
 def data_set(request):
-    # Handle file upload
+    """
+    upload data set
+    """
     if request.method == 'POST':
         form = DocumentForm(request.POST, request.FILES)
         if form.is_valid():
@@ -280,14 +284,17 @@ def data_set(request):
 
 
 def parse_reminder_request(collective, location, text, time):
+    """
+    create json request and sent it to the StreamReader
+    """
     reminder = {
-        "project": "SmartSociety",
+        "project": "AskSmartSociety",
         "user_id": collective,
         "geo": {
             "city_name": location['city_name'],
             "country_name": location['country_name']
         },
-        "subjects": text,
+        "data": text,
         "created_at": datetime.datetime.fromtimestamp(int(time)/1000).strftime("%Y-%m-%dT%H:%M:%S")
     }
     get_pusher().trigger('ouroboros', 'classification', reminder)
@@ -327,6 +334,9 @@ def send_collective_reminder(request):
 
 
 def invalidate_sql(collective, peers):
+    """
+    saves the peers that need to be invalidated in the database
+    """
     conn = MySQLdb.connect(host=cnf['host'], user=cnf['user'], passwd=cnf['password'], db=cnf['db'])
     try:
         cursor = conn.cursor()
@@ -344,6 +354,9 @@ def invalidate_sql(collective, peers):
 
 @csrf_exempt
 def invalidate_from_collective(request, cid):
+    """
+    invalidating the asked peers from collective with collctive id cid
+    """
     if request.method == 'POST':
         if request.META['CONTENT_TYPE'] == 'application/x-www-form-urlencoded':
             form = InvalidateForm(request.POST)
@@ -372,6 +385,9 @@ def invalidate_from_collective(request, cid):
 
 
 def invalidate_no_collective(request):
+    """
+    returns a page which requests a collective id for invalidation
+    """
     if request.method == 'POST':
         cid = int(request.POST.get('collective', -1))
         if cid <= 0:
@@ -384,6 +400,9 @@ def invalidate_no_collective(request):
 
 @csrf_exempt
 def change_timeout(request):
+    """
+    change the default timeout value
+    """
     try:
         conn = MySQLdb.connect(host=cnf['host'], user=cnf['user'], passwd=cnf['password'], db='lassi')
         conn.autocommit(True)
@@ -404,7 +423,31 @@ def change_timeout(request):
 
 
 @csrf_exempt
+def get_the_best_for_user(request, user_id, created_at):
+    # TODO: fix thissssssssss
+    try:
+        incentive = [1]  # TODO: Alg.predicting(userID, created_at)
+        if incentive[0] == 1:
+            intervention_id = 1  # TODO: send_intervention_for_user(userID)
+            json_incentive = JSONEncoder().encode({
+                "userID": str(user_id),
+                "message": "Intervention sent, intervention id: " + str(intervention_id)
+            })
+        else:
+            json_incentive = JSONEncoder().encode({
+                "userID": str(user_id),
+                "message": "Staying"
+            })
+        return JsonResponse(json_incentive, safe=False)
+    except:
+        return JsonResponse('{"Alg":"Error"}', safe=False)
+
+
+@csrf_exempt
 def get_user_id(request):
+    """
+    returns an incentive for a user/collective with the given id at the given time
+    """
     if request.method == 'POST':
         if request.META['CONTENT_TYPE'] == 'application/x-www-form-urlencoded':
             form = UserForm(request.POST, request.FILES)
@@ -431,23 +474,22 @@ def get_user_id(request):
 
 
 def user_profile(request):
-    # Load documents for the list page
-    incentives_list = []
-    incentives = None
+    """
+    returns the profile page corresponding to the logged in user
+    """
     if request.user.is_active:
         incentives = Incentive.objects.filter(owner=request.user)
+        incentives_list = []
         for incentive in incentives:
             incentives_list.append([incentive.schemeID, incentive.schemeName])
         documents = Document.objects.filter(owner=request.user)
-        # user = User.objects.get(username=request.user)
     return render_to_response('profilePage.html', locals(), context_instance=RequestContext(request))
 
 
 @condition(etag_func=None)
 @csrf_exempt
 def stream_response(request):
-    resp = StreamingHttpResponse(stream_response_generator())
-    return resp
+    return StreamingHttpResponse(stream_response_generator())
 
 
 @csrf_exempt
@@ -469,8 +511,8 @@ def stream_response_generator():
     local_time = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
     while True:
         cursor.execute("SELECT id,user_id,created_at,intervention_id FROM stream "
-                       "WHERE local_time>%s AND user_id!='Not Logged In' AND intervention_id is not NULL"
-                       % local_time)
+                       "WHERE local_time>%s AND user_id!='Not Logged In' AND intervention_id is not NULL",
+                       (local_time,))
         rows = cursor.fetchall()
         if len(rows) == 0:
             continue
@@ -521,23 +563,15 @@ def ask_by_date(request):
         for row in rows:
             if (row is None) or (len(row) < 8):
                 continue
-            row_id = row[0]
-            user_id = row[1]
-            created_at = row[2]
-            intervention_id = row[3]
-            preconfigured_id = row[4]
-            cohort_id = row[5]
-            algo_info = row[6]
-            country_name = row[7]
             json_to_send = JSONEncoder().encode({
-                "id": str(row_id),
-                "user_id": str(user_id),
-                "created_at": str(created_at),
-                "intervention_id": str(intervention_id),
-                "preconfigured_id": str(preconfigured_id),
-                "cohort_id": str(cohort_id),
-                "algo_info": str(algo_info),
-                "country_name": str(country_name)
+                "id": str(row[0]),
+                "user_id": str(row[1]),
+                "created_at": str(row[2]),
+                "intervention_id": str(row[3]),
+                "preconfigured_id": str(row[4]),
+                "cohort_id": str(row[5]),
+                "algo_info": str(row[6]),
+                "country_name": str(row[7])
             })
             response.append(json_to_send)
             response.append('\n')
@@ -562,23 +596,15 @@ def ask_gt_id(request):
     for row in rows:
         if (row is None) or (len(row) < 8):
             continue
-        row_id = row[0]
-        user_id = row[1]
-        created_at = row[2]
-        intervention_id = row[3]
-        preconfigured_id = row[4]
-        cohort_id = row[5]
-        algo_info = row[6]
-        country_name = row[7]
         json_to_send = JSONEncoder().encode({
-            "id": str(row_id),
-            "user_id": str(user_id),
-            "created_at": str(created_at),
-            "intervention_id": str(intervention_id),
-            "preconfigured_id": str(preconfigured_id),
-            "cohort_id": str(cohort_id),
-            "algo_info": str(algo_info),
-            "country_name": str(country_name)
+            "id": str(row[0]),
+            "user_id": str(row[1]),
+            "created_at": str(row[2]),
+            "intervention_id": str(row[3]),
+            "preconfigured_id": str(row[4]),
+            "cohort_id": str(row[5]),
+            "algo_info": str(row[6]),
+            "country_name": str(row[7])
         })
         response.append(json_to_send)
         response.append('\n')
@@ -629,28 +655,3 @@ def sql(query, params):
             conn.rollback()
             conn.close()
             return False
-
-
-@csrf_exempt
-def receive_event(request):
-    try:
-        received_json_data = json.loads(request.body)
-        source = received_json_data['source']
-        event_type = received_json_data['event_type']
-        timestamp = received_json_data['timestamp']
-        user_id = received_json_data['user_id']
-        experiment_name = received_json_data['experiment_name']
-        project = received_json_data['project']
-        if 'additional_info' in received_json_data:
-            additional_info = received_json_data['additional_info']
-        else:
-            additional_info = None
-        if sql("INSERT INTO events (source,event_type,timestamp,user_id,experiment_name,project,additional_info) "
-               "VALUES (%s,%s,%s,%s,%s,%s,%s)",
-               (source, event_type, timestamp, user_id, experiment_name, project, additional_info)):
-            return HttpResponse("OK")
-        else:
-            return HttpResponseBadRequest("Unable to save event.")
-    except:
-        print sys.exc_info()
-        return HttpResponseBadRequest("Malformed Data!")
