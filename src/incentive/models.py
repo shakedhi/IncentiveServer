@@ -89,7 +89,7 @@ class User(models.Model):
     created_at = models.CharField(max_length=1000, null=False)
 
     class Meta:
-        ordering = ('user_id', 'created_at',)
+        ordering = ('user_id', 'created_at')
 
 
 class Collective(models.Model):
@@ -106,3 +106,14 @@ class Invalidate(models.Model):
 
     class Meta:
         ordering = ('peer_ids',)
+
+
+class PeersAndCollectives(models.Model):
+    project_name = models.CharField(max_length=1000, null=False)
+    user_type = models.CharField(max_length=1000, null=False)
+    user_id = models.CharField(max_length=1000, null=False)
+    incentive_text = models.CharField(max_length=1000, null=False)
+    incentive_timestamp = models.BigIntegerField(null=True)
+
+    class Meta:
+        ordering = ('project_name', 'user_type', 'user_id', 'incentive_text', 'incentive_timestamp')

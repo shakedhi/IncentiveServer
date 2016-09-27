@@ -17,10 +17,12 @@ from rest_framework.authtoken.models import Token
 from models import Incentive, Tag, Document
 from serializers import IncentiveSerializer, UserSerializer
 from permissions import IsOwnerOrReadOnly
-from forms import DocumentForm, IncentiveForm, UserForm, TimeoutForm, CollectiveForm, InvalidateForm
+from forms import DocumentForm, IncentiveForm, UserForm, TimeoutForm
+from forms import CollectiveForm, InvalidateForm, PeersOrCollectivesForm
 from json import JSONEncoder
 from contextlib import closing
 from Config import Config as MConf
+from runner import get_the_best_for_user
 import urllib2
 import json
 import yaml
@@ -283,54 +285,28 @@ def data_set(request):
     return render_to_response('list.html', locals(), context_instance=RequestContext(request))
 
 
-def parse_reminder_request(collective, location, text, time):
-    """
-    create json request and sent it to the StreamReader
-    """
-    reminder = {
-        "project": "AskSmartSociety",
-        "user_id": collective,
-        "geo": {
-            "city_name": location['city_name'],
-            "country_name": location['country_name']
-        },
-        "data": text,
-        "created_at": datetime.datetime.fromtimestamp(int(time)/1000).strftime("%Y-%m-%dT%H:%M:%S")
-    }
-    get_pusher().trigger('ouroboros', 'classification', reminder)
-
-
 @csrf_exempt
-def send_collective_reminder(request):
-    if request.method == 'POST':
-        if request.META['CONTENT_TYPE'] == 'application/x-www-form-urlencoded':
-            form = CollectiveForm(request.POST, request.FILES)
-            if form.is_valid():
-                collective_id = str(form.data[u'collective_id'])
-                location = {
-                    "city_name": "Vienna",
-                    "country_name": "Austria"
-                }  # TODO: fix location
-                inc_text = str(form.data[u'incentive_text'])
-                inc_time = str(int(form.data[u'incentive_timestamp']) * 1000)
-                parse_reminder_request(collective_id, location, inc_text, inc_time)
+def change_timeout(request):
+    """
+    change the default timeout value
+    """
+    try:
+        conn = MySQLdb.connect(host=cnf['host'], user=cnf['user'], passwd=cnf['password'], db='lassi')
+        conn.autocommit(True)
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM incentive_timeout')
+        rows = cursor.fetchall()
+        initial_value = rows[0][0]
+        conn.close()
+    except:
+        initial_value = 10
 
-                messages.success(request, 'Reminder request was sent successfully.')
-                form = CollectiveForm()
-            else:
-                messages.warning(request, 'You must fill the required fields.')
-            return render_to_response('collectiveReminder.html', locals(), context_instance=RequestContext(request))
-        elif request.META['CONTENT_TYPE'] == 'application/json':
-            r = yaml.safe_load(str(request.body))
-            location = {
-                "city_name": "Vienna",
-                "country_name": "Austria"
-            }  # TODO: fix location
-            parse_reminder_request(r['recipient']['id'], location, r['incentive_text'], r['incentive_timestamp'])
-            return JsonResponse('{"reminder":"Success"}', safe=False)
-    else:
-        form = CollectiveForm()
-        return render_to_response('collectiveReminder.html', locals(), context_instance=RequestContext(request))
+    form = TimeoutForm(request.POST or None, initial={'timeout': initial_value})
+    if form.is_valid():
+        save_it = form.save(commit=False)
+        save_it.save()
+        messages.success(request, 'The timeout has been updated!')
+    return render_to_response("timeout.html", locals(), context_instance=RequestContext(request))
 
 
 def invalidate_sql(collective, peers):
@@ -398,49 +374,127 @@ def invalidate_no_collective(request):
     return render_to_response('invalidateNoCollective.html', locals(), context_instance=RequestContext(request))
 
 
-@csrf_exempt
-def change_timeout(request):
+def parse_timestamp(ts):
+    int_ts = int(ts)
+    if len(ts) == 13:
+        int_ts /= 1000  # convert timestamp from ms to sec
+    return datetime.datetime.fromtimestamp(int_ts).strftime("%Y-%m-%dT%H:%M:%S")
+
+
+def try_get_location(json_str):
     """
-    change the default timeout value
+    gets a json string and returns the location details.
+    if not such details exist, it will return fake location.
     """
-    try:
-        conn = MySQLdb.connect(host=cnf['host'], user=cnf['user'], passwd=cnf['password'], db='lassi')
-        conn.autocommit(True)
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM incentive_timeout')
-        rows = cursor.fetchall()
-        initial_value = rows[0][0]
-        conn.close()
-    except:
-        initial_value = 10
+    r = yaml.safe_load(json_str)
+    city = "Vienna"  # fake city
+    country = "Austria"  # fake country
+    if "location" in r:
+        city = r["location"]["city_name"]
+        country = r["location"]["country_name"]
 
-    form = TimeoutForm(request.POST or None, initial={'timeout': initial_value})
-    if form.is_valid():
-        save_it = form.save(commit=False)
-        save_it.save()
-        messages.success(request, 'The timeout has been updated!')
-    return render_to_response("timeout.html", locals(), context_instance=RequestContext(request))
+    location = {
+        "city_name": city,
+        "country_name": country
+    }
+    return location
+
+
+def send_incentive_request(project, utype, uid, location, text, time, inc_type):
+    """
+    create json request and sent it to the StreamReader
+    """
+    request = {
+        "project": project,
+        "recipient": {
+            "type": utype,
+            "id": uid
+        },
+        "geo": {
+            "city_name": location['city_name'],
+            "country_name": location['country_name']
+        },
+        "data": text,
+        "created_at": time,
+        "type": inc_type
+    }
+    get_pusher().trigger('ouroboros', 'classification', request)
 
 
 @csrf_exempt
-def get_the_best_for_user(request, user_id, created_at):
-    # TODO: fix thissssssssss
-    try:
-        incentive = [1]  # TODO: Alg.predicting(userID, created_at)
-        if incentive[0] == 1:
-            intervention_id = 1  # TODO: send_intervention_for_user(userID)
-            json_incentive = JSONEncoder().encode({
-                "userID": str(user_id),
-                "message": "Intervention sent, intervention id: " + str(intervention_id)
-            })
-        else:
-            json_incentive = JSONEncoder().encode({
-                "userID": str(user_id),
-                "message": "Staying"
-            })
-        return JsonResponse(json_incentive, safe=False)
-    except:
-        return JsonResponse('{"Alg":"Error"}', safe=False)
+def send_collective_reminder(request):
+    """
+    sends reminder incentive to collective, according to given details
+    """
+    if request.method == 'POST':
+        proj = "AskSmartSociety"
+        ctype = "collective"
+        inc_type = "reminder"
+        if request.META['CONTENT_TYPE'] == 'application/x-www-form-urlencoded':
+            form = CollectiveForm(request.POST, request.FILES)
+            if form.is_valid():
+                cid = str(form.data[u'collective_id'])
+                location = try_get_location("{}")
+                inc_text = str(form.data[u'incentive_text'])
+                inc_time = parse_timestamp(form.data[u'incentive_timestamp'])
+                send_incentive_request(proj, ctype, cid, location, inc_text, inc_time, inc_type)
+                messages.success(request, 'Reminder request was sent successfully.')
+                form = CollectiveForm()
+            else:
+                messages.warning(request, 'You must fill the required fields.')
+            return render_to_response('collectiveReminder.html', locals(), context_instance=RequestContext(request))
+        elif request.META['CONTENT_TYPE'] == 'application/json':
+            r = yaml.safe_load(str(request.body))
+            cid = r['recipient']['id']
+            location = try_get_location(str(request.body))
+            inc_text = r['incentive_text']
+            inc_time = parse_timestamp(r['incentive_timestamp'])
+            send_incentive_request(proj, ctype, cid, location, inc_text, inc_time, inc_type)
+            return JsonResponse('{"Reminder":"Sent"}', safe=False)
+    else:
+        form = CollectiveForm()
+        return render_to_response('collectiveReminder.html', locals(), context_instance=RequestContext(request))
+
+
+def send_incentive(request):
+    if request.method == 'POST':
+        if request.META['CONTENT_TYPE'] == 'application/x-www-form-urlencoded':
+            form = PeersOrCollectivesForm(request.POST, request.FILES)
+            if form.is_valid():
+                proj = form.data[u'project_name']
+                user_type = str(form.data[u'user_type'])
+                user_id = str(form.data[u'user_id'])
+                location = try_get_location("{}")
+                inc_text = str(form.data[u'incentive_text'])
+                if form.data[u'incentive_timestamp']:
+                    inc_time = parse_timestamp(form.data[u'incentive_timestamp'])
+                else:
+                    inc_time = parse_timestamp('0')
+                inc_type = "message"
+                send_incentive_request(proj, user_type, user_id, location, inc_text, inc_time, inc_type)
+                messages.success(request, 'Incentive request was sent successfully.')
+                form = PeersOrCollectivesForm()
+            else:
+                messages.warning(request, 'You must fill the required fields.')
+            return render_to_response('sendIncentive.html', locals(), context_instance=RequestContext(request))
+        elif request.META['CONTENT_TYPE'] == 'application/json':
+            r = yaml.safe_load(str(request.body))
+            proj = r['project']
+            location = try_get_location(str(request.body))
+            user_type = r['recipient']['type']
+            user_id = r['recipient']['id']
+            inc_text = r['incentive_text']
+            inc_time = r['incentive_timestamp']
+            inc_type = r['incentive_type']
+            if len(inc_time) > 0:
+                for ts in inc_time:
+                    send_incentive_request(proj, user_type, user_id, location, inc_text, parse_timestamp(ts), inc_type)
+            else:
+                send_incentive_request(proj, user_type, user_id, location, inc_text, parse_timestamp('0'), inc_type)
+            return JsonResponse('{"Incentive":"Sent"}', safe=False)
+    else:
+        form = PeersOrCollectivesForm()
+        return render_to_response('sendIncentive.html', locals(), context_instance=RequestContext(request))
 
 
 @csrf_exempt
@@ -456,7 +510,7 @@ def get_user_id(request):
                 date = str(form.data[u'created_at'])
                 best_incentive = get_the_best_for_user(request, user_id, date).content
                 best_incentive = json.loads(json.loads(best_incentive))
-                best_incentive_user = best_incentive['userID']
+                best_incentive_user = best_incentive['user_id']
                 best_incentive_message = best_incentive['message']
                 form = UserForm()  # A empty, unbound form
                 return render_to_response('GetUser.html', locals(), context_instance=RequestContext(request))

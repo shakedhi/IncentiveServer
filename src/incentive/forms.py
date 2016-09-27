@@ -47,3 +47,19 @@ class InvalidateForm(forms.ModelForm):
     class Meta:
         model = Timeout
         fields = ('peer_ids',)
+
+
+class PeersOrCollectivesForm(forms.Form):
+    choices = [('peer', 'Peer'), ('collective', 'Collective')]
+    ts_msg = "If you want to send the incentive after a timeout instead of using timestamp, " \
+             "leave the 'incentive_timestamp' field empty."
+
+    project_name = forms.CharField(required=True)
+    user_type = forms.ChoiceField(choices=choices, required=True)
+    user_id = forms.CharField(required=True)
+    incentive_text = forms.CharField(required=True)
+    incentive_timestamp = forms.IntegerField(required=False, help_text=ts_msg)
+
+    class Meta:
+        model = User
+        ordering = ('project_name', 'user_type', 'user_id', 'incentive_text', 'incentive_timestamp')

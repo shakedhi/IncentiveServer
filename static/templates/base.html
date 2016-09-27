@@ -49,15 +49,28 @@
                     <li><a href="{% url 'profile_page' %}">Profile</a></li>
                     <li class="dropdown">
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+                            Algorithm <span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu" role="menu">
+                            <li><a href="/startAlg">Start</a></li>
+                            <li><a href="#">Clear</a></li>
+                            <li class="divider"></li>
+                            <li><a href="/disratio">Get Ratio</a></li>
+                            <li class="divider"></li>
+                            <li><a href="/getIncUser">Get Incentive for Specific User</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
                             SmartSociety <span class="caret"></span>
                         </a>
                         <ul class="dropdown-menu" role="menu">
-                            <li><a href="{% url "reminder" %}">Collective reminder</a></li>
-                            <li><a href="{% url "invalidate_no_collective" %}">Invalidate</a></li>
+                            <li><a href="{% url "sendIncentive" %}">Send Incentive</a></li>
+                            <li class="divider"></li>
+                            <li><a href="{% url "reminder" %}">Send Collective Reminder</a></li>
+                            <li><a href="{% url "invalidate_no_collective" %}">Invalidate from Collective</a></li>
                             <li class="divider"></li>
                             <li><a href="{% url 'change_timeout' %}">Change timeout</a></li>
-                            <li class="divider"></li>
-                            <li><a href="{% url "getIncUser" %}">Get Incentive for Specific User</a></li>
                         </ul>
                     </li>
                 {% endif %}

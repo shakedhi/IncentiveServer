@@ -32,10 +32,12 @@ app_log.setLevel(logging.INFO)
 app_log.addHandler(my_handler)
 
 
-def sql(user_id, city_name, country_name, project, data, created_at):
+def sql(inc_type, user_id, user_type, city_name, country_name, project, data, created_at):
     """
     insert stream event data to the database
+    :param inc_type: the type of the incentive (reminder, message or preconfigured)
     :param user_id: the user id
+    :param user_type: the user type (either peer or collective)
     :param city_name: the city name
     :param country_name: the country name
     :param project: the project name
@@ -49,9 +51,9 @@ def sql(user_id, city_name, country_name, project, data, created_at):
         datet = parse(created_at)
         create_time = datetime.datetime(datet.year, datet.month, datet.day, datet.hour, datet.minute, datet.second)
         cursor.execute(
-            "INSERT INTO stream (user_id,project,data,created_at,country_name,city_name,local_time) "
-            "VALUES (%s,%s,%s,%s,%s,%s,%s)",
-            (user_id, project, data, create_time, country_name, city_name, local_time))
+            "INSERT INTO stream (type,user_id,user_type,project,data,created_at,country_name,city_name,local_time) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+            (inc_type, user_id, user_type, project, data, create_time, country_name, city_name, local_time))
         conn.commit()
     except MySQLdb.Error as e:
         app_log.info(e)
@@ -65,9 +67,9 @@ def classification_callback(data):
     :param data: the data recieved in the classification event
     """
     x = yaml.load(str(data))
-    if x['project'] == "AskSmartSociety":
-        app_log.info("User:{0} Record added.\n".format(x['user_id']))
-        sql(x['user_id'], x['geo']['city_name'], x['geo']['country_name'], x['project'], x['data'], x['created_at'])
+    sql(x['type'], x['user_id'], x['user_type'], x['geo']['city_name'],
+        x['geo']['country_name'], x['project'],  x['data'], x['created_at'])
+    app_log.info("User:{0} Record added.\n".format(x['user_id']))
 
 
 def connect_handler(data):

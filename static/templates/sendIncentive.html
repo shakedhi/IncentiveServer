@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% load bootstrap %}
+
+{% block jumbotron %}
+    <!-- Main jumbotron for a primary marketing message or call to action -->
+    <div class="jumbotron">
+      <div class="container">
+        <h1>Get Incentive for Specific User</h1>
+      </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="col-md-4"></div>
+    <div class="col-md-4">
+        {% block checkuser %}
+            {% if user.is_authenticated %}
+                <form action="{% url "sendIncentive" %}" method="post">
+                    {% csrf_token %}
+                    {{ form.non_field_errors }}
+                    {{ form|bootstrap }}
+                    <div class="form-group">
+                      <button type="submit" class="btn btn-success btn-block">Send Incentive</button>
+                    </div>
+                </form>
+            {% else %}
+                <h1>You Need to Sign In first</h1>
+            {% endif %}
+        {% endblock%}
+    </div>
+    <div class="col-md-4"></div>
+{% endblock %}

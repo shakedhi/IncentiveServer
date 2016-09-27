@@ -3,7 +3,7 @@ from django.conf.urls.static import static
 from django.contrib.auth.models import User
 from rest_framework import serializers, routers
 from django.conf.urls import url
-from incentive import views
+from incentive import views, runner
 from incentive.views import IncentiveViewSet, UserViewSet
 from rest_framework import renderers
 from django.conf.urls import include
@@ -65,9 +65,11 @@ urlpatterns = [
     url(r'^aboutus/', views.aboutus, name='aboutus'),
     url(r'^list/$', views.data_set, name='data_set'),
     url(r'^profile/', views.user_profile, name='profile_page'),
+    url(r'^startAlg/', runner.start_alg, name='start_alg'),
     url(r'^timeout/$', views.change_timeout, name='change_timeout'),
 
     url(r'^getIncUser/$', views.get_user_id, name='getIncUser'),
+    url(r'^sendIncentive/$', views.send_incentive, name='sendIncentive'),
     url(r'^dash/pages/dash.html', views.dash, name='dash'),
     url(r'^dashStream/$', views.dash_stream, name='dashStream'),
 

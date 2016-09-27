@@ -26,6 +26,7 @@ app_log.setLevel(logging.INFO)
 app_log.addHandler(my_handler)
 
 adapter_pusher = None
+lock = threading.Lock()
 
 
 def sql(query, params):
@@ -111,50 +112,78 @@ def get_invalidated_peers(collective_id):
         return []
 
 
-def intervene(row_id, collective_id, intervention):
+def remind(row_id, collective_id, intervention):
     """
-    sends the intervention for the collective
+    sends the reminder for the collective
     :param row_id: the row id in the database
     :param collective_id: the collective id
     :param intervention: the intervention msg/id
     """
     try:
         payload = {
-            "project": "SmartSociety",
+            "project": "AskSmartSociety",
             "collective_id": collective_id,
             "intervention_type": "reminder",
             "intervention_text": intervention,
             "invalidated": get_invalidated_peers(collective_id)
         }
-
         adapter_pusher.trigger('adapter', 'intervention', payload)  # send intervention
         app_log.info('send_intervention_for_collective(' + collective_id + '):' + str(payload) + '\n')
-
-        sql("UPDATE stream SET intervention_id=%s WHERE id=%s", ("Sent", row_id))
-        app_log.info("done execute\n")
+        status = "Sent"
     except:
         app_log.info("Error: ")
         app_log.info(sys.exc_info())
-        sql("UPDATE stream SET intervention_id=%s WHERE id=%s", ("Failed", row_id))
+        status = "Failed"
+    sql("UPDATE stream SET status=%s WHERE id=%s", (status, row_id))
+
+
+def intervene(row_id, user_type, user_id, intervention):
+    """
+        sends the reminder for the collective
+        :param row_id: the row id in the database
+        :param user_type: the type of the user (can be either peer or collective)
+        :param user_id: the peer/collective id
+        :param intervention: the intervention msg/id
+        """
+    try:
+        payload = {
+            "recipient": {
+                "type": user_type,
+                "id": user_id
+            },
+            "intervention_type": "message",
+            "intervention_text": intervention,
+        }
+        adapter_pusher.trigger('adapter', 'intervention', payload)  # send intervention
+        app_log.info('send_intervention_for_user(' + user_id + '):' + str(payload) + '\n')
+        status = "Sent"
+    except:
+        app_log.info("Error: ")
+        app_log.info(sys.exc_info())
+        status = "Failed"
+    sql("UPDATE stream SET status=%s WHERE id=%s", (status, row_id))
 
 
 def prediction():
     """
     reads every 1 second the records from the streamer, and sends interventions to
     """
+    global lock
     try:
         local_time = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-        rows = sql_get("SELECT id,user_id,data,intervention_id "
-                       "FROM stream WHERE intervention_id IS NULL AND created_at<=%s", (local_time,))
-        for row in rows:
-            row_id = row[0]
-            collective_id = row[1]
-            intervention = row[2]
-            intervention_id = row[3]
-
-            if intervention_id is None:
-                sql("UPDATE stream SET intervention_id=%s WHERE id=%s", ("Busy", row_id))
-                threading.Thread(target=intervene, args=[row_id, collective_id, intervention]).start()
+        with lock:
+            rows = sql_get("SELECT id,user_id,user_type,data FROM stream WHERE status IS NULL AND created_at<=%s",
+                           (local_time,))
+            for row in rows:
+                row_id = row[0]
+                user_type = row[1]
+                user_id = row[2]
+                intervention = row[3]
+                sql("UPDATE stream SET status=%s WHERE id=%s", ("Busy", row_id))
+                if user_type == "collective":
+                    threading.Thread(target=remind, args=[row_id, user_type, user_id, intervention]).start()
+                else:
+                    threading.Thread(target=intervene, args=[row_id, user_type, user_id, intervention]).start()
     except:
         app_log.info("Error: ")
         app_log.info(sys.exc_info())
