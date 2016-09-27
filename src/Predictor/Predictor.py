@@ -47,14 +47,15 @@ def sql(query, params):
     conn.close()
 
 
-def sql_get(query, params):
+def sql_get(query, params, db=cnf['db']):
     """
     execute sql query (i.e. select) with qiven parameters
     :param query: the query
     :param params: the parameters, corresponding to the query
+    :param db: the database name. default in config.
     :return: the sql query results or None if error occured.
     """
-    conn = MySQLdb.connect(host=cnf['host'], user=cnf['user'], passwd=cnf['password'], db=cnf['db'])
+    conn = MySQLdb.connect(host=cnf['host'], user=cnf['user'], passwd=cnf['password'], db=db)
     rows = None
     with closing(conn.cursor()) as cursor:
         try:
@@ -75,19 +76,31 @@ def sql_get(query, params):
     return rows
 
 
-def sleep_timeout(user_id):
+def get_incentive(incentive_id):
     """
-    sleeps timeout minutes before sending intervention to user/collective with user_id
-    :param user_id: the user/collective id
+    tries to get the incentive with the given id.
+    :param incentive_id: the peer/collective id
     """
     try:
-        conn = MySQLdb.connect(host=cnf['host'], user=cnf['user'], passwd=cnf['password'], db='lassi')
-        conn.autocommit(True)
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM incentive_timeout")
-        rows = cursor.fetchall()
+        rows = sql_get("SELECT text FROM incentive_incentive WHERE id=%s", [incentive_id], 'lassi')
+        inc_text = rows[0][0]
+        app_log.info('incentive with id ' + incentive_id + ' was retrieved\n')
+    except:
+        rows = sql_get("SELECT text FROM incentive_incentive WHERE id=1", [], 'lassi')
+        inc_text = rows[0][0]  # default text
+        app_log.info('no such incentive with id ' + incentive_id + '\n')
+
+    return inc_text
+
+
+def sleep_timeout(user_id):
+    """
+    sleeps timeout minutes before sending intervention to peer/collective with user_id id
+    :param user_id: the peer/collective id
+    """
+    try:
+        rows = sql_get("SELECT timeout FROM incentive_timeout", [], 'lassi')
         timeout = rows[0][0]
-        conn.close()
     except:
         timeout = 10  # default timeout in minutes
 
@@ -137,22 +150,25 @@ def remind(row_id, collective_id, intervention):
     sql("UPDATE stream SET status=%s WHERE id=%s", (status, row_id))
 
 
-def intervene(row_id, user_type, user_id, intervention):
+def intervene(row_id, user_type, user_id, intervention, inc_type):
     """
         sends the reminder for the collective
         :param row_id: the row id in the database
         :param user_type: the type of the user (can be either peer or collective)
         :param user_id: the peer/collective id
         :param intervention: the intervention msg/id
+        :param inc_type: the type of the incentive (either message or preconfigured)
         """
     try:
+        if inc_type == "preconfigured":
+            intervention = get_incentive(intervention)
         payload = {
+            "intervention_type": "message",
+            "intervention_text": intervention,
             "recipient": {
                 "type": user_type,
                 "id": user_id
-            },
-            "intervention_type": "message",
-            "intervention_text": intervention,
+            }
         }
         adapter_pusher.trigger('adapter', 'intervention', payload)  # send intervention
         app_log.info('send_intervention_for_user(' + user_id + '):' + str(payload) + '\n')
@@ -172,18 +188,23 @@ def prediction():
     try:
         local_time = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
         with lock:
-            rows = sql_get("SELECT id,user_id,user_type,data FROM stream WHERE status IS NULL AND created_at<=%s",
-                           (local_time,))
+            rows = sql_get("SELECT id,user_id,user_type,data,type,created_at FROM stream "
+                           "WHERE status IS NULL AND created_at<=%s", (local_time,))
             for row in rows:
                 row_id = row[0]
-                user_type = row[1]
-                user_id = row[2]
-                intervention = row[3]
+                user_id = row[1]
+                user_type = row[2]
+                inc_text = row[3]
+                inc_type = row[4]
+                inc_time = row[5]
+
                 sql("UPDATE stream SET status=%s WHERE id=%s", ("Busy", row_id))
-                if user_type == "collective":
-                    threading.Thread(target=remind, args=[row_id, user_type, user_id, intervention]).start()
+                if inc_type == "reminder":
+                    threading.Thread(target=remind, args=[row_id, user_id, inc_text]).start()
                 else:
-                    threading.Thread(target=intervene, args=[row_id, user_type, user_id, intervention]).start()
+                    if inc_time == datetime.datetime(1970, 1, 1):
+                        sleep_timeout(user_id)
+                    threading.Thread(target=intervene, args=[row_id, user_type, user_id, inc_text, inc_type]).start()
     except:
         app_log.info("Error: ")
         app_log.info(sys.exc_info())

@@ -67,9 +67,9 @@ def classification_callback(data):
     :param data: the data recieved in the classification event
     """
     x = yaml.load(str(data))
-    sql(x['type'], x['user_id'], x['user_type'], x['geo']['city_name'],
+    sql(x['type'], x['recipient']['id'], x['recipient']['type'], x['geo']['city_name'],
         x['geo']['country_name'], x['project'],  x['data'], x['created_at'])
-    app_log.info("User:{0} Record added.\n".format(x['user_id']))
+    app_log.info("User:{0} Record added.\n".format(x['recipient']['id']))
 
 
 def connect_handler(data):

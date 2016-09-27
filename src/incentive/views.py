@@ -456,6 +456,7 @@ def send_collective_reminder(request):
         return render_to_response('collectiveReminder.html', locals(), context_instance=RequestContext(request))
 
 
+@csrf_exempt
 def send_incentive(request):
     if request.method == 'POST':
         if request.META['CONTENT_TYPE'] == 'application/x-www-form-urlencoded':
@@ -469,6 +470,7 @@ def send_incentive(request):
                 if form.data[u'incentive_timestamp']:
                     inc_time = parse_timestamp(form.data[u'incentive_timestamp'])
                 else:
+                    print form.data[u'incentive_timestamp']
                     inc_time = parse_timestamp('0')
                 inc_type = "message"
                 send_incentive_request(proj, user_type, user_id, location, inc_text, inc_time, inc_type)
