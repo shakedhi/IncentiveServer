@@ -1,5 +1,5 @@
 from django import forms
-from .models import Incentive, Timeout, User
+from .models import Incentive, Timeout, User, Collective, PeersAndCollectives
 
 
 class IncentiveForm(forms.ModelForm):
@@ -38,6 +38,7 @@ class CollectiveForm(forms.Form):
     incentive_timestamp = forms.IntegerField(required=True)
 
     class Meta:
+        model = Collective
         ordering = ('collective_id', 'incentive_text', 'incentive_timestamp')
 
 
@@ -50,16 +51,18 @@ class InvalidateForm(forms.ModelForm):
 
 
 class PeersOrCollectivesForm(forms.Form):
-    choices = [('peer', 'Peer'), ('collective', 'Collective')]
+    user_choices = [('peer', 'Peer'), ('collective', 'Collective')]
+    inc_choices = [('message', 'Message'), ('preconfigured', 'Preconfigured')]
     ts_msg = "If you want to send the incentive after a timeout instead of using timestamp, " \
-             "leave the 'incentive_timestamp' field empty."
+             "leave the field above empty."
 
     project_name = forms.CharField(required=True)
-    user_type = forms.ChoiceField(choices=choices, required=True)
+    user_type = forms.ChoiceField(choices=user_choices, required=True)
     user_id = forms.CharField(required=True)
-    incentive_text = forms.CharField(required=True)
+    incentive_type = forms.ChoiceField(choices=inc_choices, required=True)
+    incentive_text = forms.CharField(required=True, label='Incentive text (Message) or ID (Preconfigured)')
     incentive_timestamp = forms.IntegerField(required=False, help_text=ts_msg)
 
     class Meta:
-        model = User
-        ordering = ('project_name', 'user_type', 'user_id', 'incentive_text', 'incentive_timestamp')
+        model = PeersAndCollectives
+        ordering = ('project_name', 'user_type', 'user_id', 'incentive_type', 'incentive_text', 'incentive_timestamp')

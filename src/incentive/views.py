@@ -467,12 +467,12 @@ def send_incentive(request):
                 user_id = str(form.data[u'user_id'])
                 location = try_get_location("{}")
                 inc_text = str(form.data[u'incentive_text'])
+                inc_type = str(form.data[u'incentive_type'])
                 if form.data[u'incentive_timestamp']:
                     inc_time = parse_timestamp(form.data[u'incentive_timestamp'])
                 else:
                     print form.data[u'incentive_timestamp']
                     inc_time = parse_timestamp('0')
-                inc_type = "message"
                 send_incentive_request(proj, user_type, user_id, location, inc_text, inc_time, inc_type)
                 messages.success(request, 'Incentive request was sent successfully.')
                 form = PeersOrCollectivesForm()

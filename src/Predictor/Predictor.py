@@ -150,7 +150,7 @@ def remind(row_id, collective_id, intervention):
     sql("UPDATE stream SET status=%s WHERE id=%s", (status, row_id))
 
 
-def intervene(row_id, user_type, user_id, intervention, inc_type):
+def intervene(row_id, user_type, user_id, intervention, inc_type, inc_time):
     """
         sends the reminder for the collective
         :param row_id: the row id in the database
@@ -158,8 +158,11 @@ def intervene(row_id, user_type, user_id, intervention, inc_type):
         :param user_id: the peer/collective id
         :param intervention: the intervention msg/id
         :param inc_type: the type of the incentive (either message or preconfigured)
+        :param inc_time: the time of which the incentive should be sent
         """
     try:
+        if inc_time == datetime.datetime(1970, 1, 1):
+            sleep_timeout(user_id)
         if inc_type == "preconfigured":
             intervention = get_incentive(intervention)
         payload = {
@@ -202,9 +205,7 @@ def prediction():
                 if inc_type == "reminder":
                     threading.Thread(target=remind, args=[row_id, user_id, inc_text]).start()
                 else:
-                    if inc_time == datetime.datetime(1970, 1, 1):
-                        sleep_timeout(user_id)
-                    threading.Thread(target=intervene, args=[row_id, user_type, user_id, inc_text, inc_type]).start()
+                    threading.Thread(target=intervene, args=[row_id, user_type, user_id, inc_text, inc_type, inc_time]).start()
     except:
         app_log.info("Error: ")
         app_log.info(sys.exc_info())

@@ -112,8 +112,9 @@ class PeersAndCollectives(models.Model):
     project_name = models.CharField(max_length=1000, null=False)
     user_type = models.CharField(max_length=1000, null=False)
     user_id = models.CharField(max_length=1000, null=False)
+    incentive_type = models.CharField(max_length=1000, null=False)
     incentive_text = models.CharField(max_length=1000, null=False)
     incentive_timestamp = models.BigIntegerField(null=True)
 
     class Meta:
-        ordering = ('project_name', 'user_type', 'user_id', 'incentive_text', 'incentive_timestamp')
+        ordering = ('project_name', 'user_type', 'user_id', 'incentive_type', 'incentive_text', 'incentive_timestamp')
