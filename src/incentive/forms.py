@@ -1,5 +1,5 @@
 from django import forms
-from .models import Incentive, Timeout, User, Collective, PeersAndCollectives
+from .models import Incentive, Timeout, User, Collective, PeersAndCollectives, ChangePassword
 
 
 class IncentiveForm(forms.ModelForm):
@@ -66,3 +66,13 @@ class PeersOrCollectivesForm(forms.Form):
     class Meta:
         model = PeersAndCollectives
         ordering = ('project_name', 'user_type', 'user_id', 'incentive_type', 'incentive_text', 'incentive_timestamp')
+
+
+class ChangePasswordForm(forms.Form):
+    old_password = forms.CharField(required=True)
+    new_password = forms.CharField(required=True)
+    repeat_new_password = forms.CharField(required=True)
+
+    class Meta:
+        model = ChangePassword
+        fields = ('new_password', 'repeat_new_password')

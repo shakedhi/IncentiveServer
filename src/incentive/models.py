@@ -118,3 +118,12 @@ class PeersAndCollectives(models.Model):
 
     class Meta:
         ordering = ('project_name', 'user_type', 'user_id', 'incentive_type', 'incentive_text', 'incentive_timestamp')
+
+
+class ChangePassword(models.Model):
+    old_password = models.CharField(max_length=1000, null=False)
+    new_password = models.CharField(max_length=1000, null=False)
+    repeat_new_password = models.CharField(max_length=1000, null=False)
+
+    class Meta:
+        ordering = ('new_password', 'repeat_new_password')

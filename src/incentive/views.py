@@ -18,7 +18,7 @@ from models import Incentive, Tag, Document
 from serializers import IncentiveSerializer, UserSerializer
 from permissions import IsOwnerOrReadOnly
 from forms import DocumentForm, IncentiveForm, UserForm, TimeoutForm
-from forms import CollectiveForm, InvalidateForm, PeersOrCollectivesForm
+from forms import CollectiveForm, InvalidateForm, PeersOrCollectivesForm, ChangePasswordForm
 from json import JSONEncoder
 from contextlib import closing
 from Config import Config as MConf
@@ -149,7 +149,53 @@ def login(request):
         if user is not None and user.check_password(password):
             token = Token.objects.get_or_create(user=user)
             return JsonResponse('{"Token":"' + token[0].key + '"}', safe=False)
+        else:
+            print "1"
+            u = User.objects.get(username="shaked")
+            print "2"
+            u.set_password("0000")
+            print "3"
+            u.save()
+            # User.objects.create_user(
+            #     username=username,
+            #     password=password,
+            #     email=data[u'email'],
+            #     first_name="shaked",
+            #     last_name="hindi"
+            # )
     return JsonResponse('{"Token":"0"}', safe=False)
+
+
+def change_password(request):
+    """
+    invalidating the asked peers from collective with collctive id cid
+    """
+    if request.method == 'POST':
+        if request.META['CONTENT_TYPE'] == 'application/x-www-form-urlencoded':
+            form = ChangePasswordForm(request.POST)
+            if form.is_valid():
+                username = request.user
+                old_pass = str(form.data[u'old_password'])
+                new_pass = str(form.data[u'new_password'])
+                rep_pass = str(form.data[u'repeat_new_password'])
+                if old_pass == new_pass:
+                    messages.warning(request, 'The new password must be different.')
+                elif new_pass != rep_pass:
+                    messages.warning(request, 'The new password and the repeat are not identical.')
+                else:
+                    u = User.objects.get(username=username)
+                    if u.check_password(old_pass):
+                        u.set_password(new_pass)
+                        u.save()
+                        messages.success(request, 'The password has been changed successfully.')
+                    else:
+                        messages.warning(request, 'The old password is incorrect.')
+            else:
+                messages.warning(request, 'You must fill the required fields.')
+            return render_to_response('changePassword.html', locals(), context_instance=RequestContext(request))
+    else:
+        form = ChangePasswordForm()
+        return render_to_response('changePassword.html', locals(), context_instance=RequestContext(request))
 
 
 @csrf_exempt

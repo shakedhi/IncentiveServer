@@ -8,7 +8,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="">
-    <meta name="author" content="Dor Amir">
+    <meta name="author" content="Shaked Hindi">
     <link rel="shortcut icon" type="image/png" href="{{ STATIC_URL }}/favicon.ico">
     <title>Incentive Server</title>
     <link href="/static/css/custom.css" rel="stylesheet">
@@ -47,19 +47,21 @@
                         <li><a href="{% url 'admin:index' %}">Admin</a></li>
                     {% endif %}
                     <li><a href="{% url 'profile_page' %}">Profile</a></li>
-                    <li class="dropdown">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
-                            Algorithm <span class="caret"></span>
-                        </a>
-                        <ul class="dropdown-menu" role="menu">
-                            <li><a href="/startAlg">Start</a></li>
-                            <li><a href="#">Clear</a></li>
-                            <li class="divider"></li>
-                            <li><a href="/disratio">Get Ratio</a></li>
-                            <li class="divider"></li>
-                            <li><a href="/getIncUser">Get Incentive for Specific User</a></li>
-                        </ul>
-                    </li>
+                    {% if user.is_staff %}
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+                                Algorithm <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu" role="menu">
+                                <li><a href="/startAlg">Start</a></li>
+                                <li><a href="#">Clear</a></li>
+                                <li class="divider"></li>
+                                <li><a href="/disratio">Get Ratio</a></li>
+                                <li class="divider"></li>
+                                <li><a href="/getIncUser">Get Incentive for Specific User</a></li>
+                            </ul>
+                        </li>
+                    {% endif %}
                     <li class="dropdown">
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
                             SmartSociety <span class="caret"></span>
@@ -69,8 +71,10 @@
                             <li class="divider"></li>
                             <li><a href="{% url "reminder" %}">Send Collective Reminder</a></li>
                             <li><a href="{% url "invalidate_no_collective" %}">Invalidate from Collective</a></li>
-                            <li class="divider"></li>
-                            <li><a href="{% url 'change_timeout' %}">Change timeout</a></li>
+                            {% if user.is_staff %}
+                                <li class="divider"></li>
+                                <li><a href="{% url 'change_timeout' %}">Change timeout</a></li>
+                            {% endif %}
                         </ul>
                     </li>
                 {% endif %}
@@ -80,7 +84,17 @@
             <ul class="nav navbar-nav navbar-right">
                 {% block userlinks %}
                     {% if user.is_authenticated %}
-                        {% optional_logout request user %}
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                                {{ user }}
+                                <b class="caret"></b>
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a href="{% url 'change_password' %}">Change password</a></li>
+                                <li class="divider"></li>
+                                <li><a href="{% url 'rest_framework:logout' %}?next={% url 'home' %}">Log out</a></li>
+                            </ul>
+                        </li>
                     {% else %}
                         {% optional_login request %}
                     {% endif %}
@@ -123,7 +137,7 @@
     </div>
     <hr>
     <footer>
-        <p>&copy; BGU - HDMAI 2014-2016</p>
+        <p>&copy; BGU - HDMAI 2014-2017</p>
     </footer>
 </div> <!-- /container -->
 

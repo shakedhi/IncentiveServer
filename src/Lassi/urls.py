@@ -61,6 +61,7 @@ urlpatterns = [
     url(r'^add/', views.add_incentive, name='add'),
     url(r'^incentives/$', views.incentive_list, name='incentive_filter'),
     url(r'^login/$', views.login, name='login'),
+    url(r'^changePassword/$', views.change_password, name='change_password'),
     url(r'^wiki/$', views.wiki, name='wiki'),
     url(r'^aboutus/', views.aboutus, name='aboutus'),
     url(r'^list/$', views.data_set, name='data_set'),

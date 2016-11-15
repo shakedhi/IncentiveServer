@@ -44,6 +44,10 @@ pre .atv {
 pre .dec {
   color: #3387CC;
 }
+
+pre .wrn {
+  color: #cc1c09;
+}
 /* decimal - blue */
 /* Specify class=linenums on a pre to get line numbering */
 ol.linenums {
